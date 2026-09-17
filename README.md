@@ -30,7 +30,7 @@ TODO
 
 ## Tests
 
-The Gitlabe CI runner tests can be run with for
+The Gitlabe CI runner NixOS VM tests can be run with for
 [mvs](https://github.com/fzakaria/nixpkgs-multiverse) pinned `nixos-unstable`
 and pinned `nixos-26.05` with
 
