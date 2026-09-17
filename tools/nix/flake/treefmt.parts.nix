@@ -1,0 +1,70 @@
+{ inputs, ... }:
+{
+  imports = [
+    inputs.treefmt-nix.flakeModule
+  ];
+
+  perSystem =
+    {
+      config,
+      pkgs,
+      ...
+    }:
+    let
+      treefmt = config.treefmt.build.wrapper;
+    in
+    {
+      # Define formatter for `nix fmt`.
+      formatter = treefmt;
+
+      packages = {
+        inherit treefmt;
+      };
+
+      treefmt = {
+        inherit pkgs;
+        # Used to find the project root
+        # For worktrees we need either `.git` or a file.
+        projectRootFile = "README.md";
+
+        settings.global = {
+          excludes = [
+            "external/**/*"
+            "**/vendor/**/*"
+          ];
+        };
+
+        # Markdown, JSON, YAML, etc.
+        programs.prettier.enable = true;
+        settings.formatter.prettier = {
+          options = [
+            "--config"
+            "${../../configs/prettier/prettierrc.yaml}"
+          ];
+          excludes = [
+            ".yamllint.yaml" # this is a symlink, which prettier cannot deal with
+          ];
+        };
+
+        # Shellscripts (which we should not have!)
+        programs.shfmt = {
+          enable = true;
+          indent_size = 4;
+        };
+        programs.shellcheck = {
+          enable = true;
+        };
+        settings.formatter.shellcheck = {
+          options = [
+            "-e"
+            "SC1091"
+          ];
+        };
+
+        # Nix.
+        programs.deadnix.enable = true;
+        programs.statix.enable = true;
+        programs.nixfmt.enable = true;
+      };
+    };
+}

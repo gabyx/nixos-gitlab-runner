@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "nixos-gitlab-runner"
+authors:
+  - family-names: Nuetzi
+    given-names: Gabriel
+    orcid: "0009-0008-8197-2851"
+    affiliation: "gabyx"
+date-released: 2026-52-17
+version: "0.0.1"
+doi: ""
+url: https://github.com/gabyx/nixos-gitlab-runner
+repository-code: https://github.com/gabyx/nixos-gitlab-runner
+keywords: []
+license: mit
