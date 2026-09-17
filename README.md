@@ -12,11 +12,8 @@
 [![Pipeline Status](https://img.shields.io/github/actions/workflow/status/gabyx/nixos-gitlab-runner/normal.yaml?label=ci)](https://github.com/gabyx/nixos-gitlab-runner/actions/workflows/normal.yaml)
 [![License label](https://img.shields.io/badge/License-MIT-blue.svg?)](https://mit-license.org/)
 
-**Authors:**
-
-- [Gabriel Nuetzi](mailto:647437+gabyx@users.noreply.github.com)
-
-This repository provides production ready NixOS gitlab runner configurations.
+**This repository provides production ready NixOS gitlab runner
+configurations.**
 
 > [!WARNING]
 >
