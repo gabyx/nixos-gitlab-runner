@@ -780,22 +780,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-gitlab": {
-      "locked": {
-        "lastModified": 1789672796,
-        "narHash": "sha256-8CrtyRiX2vKnYr/sRon8mPuttWtmNipuHJTf4N2sXxA=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "e2dba027dddb3080d3ff3c97270198bca5dcc17e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "e2dba027dddb3080d3ff3c97270198bca5dcc17e",
-        "type": "github"
-      }
-    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1785031560,
@@ -968,7 +952,6 @@
         "multiverse": "multiverse",
         "nixpkgs": "nixpkgs_6",
         "nixpkgs-devenv": "nixpkgs-devenv",
-        "nixpkgs-gitlab": "nixpkgs-gitlab",
         "systems": "systems_2",
         "treefmt-nix": "treefmt-nix_2"
       }

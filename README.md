@@ -18,13 +18,26 @@
 
 This repository provides production ready NixOS gitlab runner configurations.
 
-## Installation
+> [!WARNING] The Gitlab runner tests are currently still maintained in nixpkgs.
+> The goal is to take the more elaborate runner with the `podman-executor` out
+> of nixpkgs and maintain it here as an example. This repository is currently in
+> beta and should be upstreamed in the future to
+> [https://github.com/nix-community](https://github.com/nix-community).
+
+## Example
 
 TODO
 
-## Usage
+## Tests
 
-TODO
+The Gitlabe CI runner tests can be run with for
+[mvs](https://github.com/fzakaria/nixpkgs-multiverse) pinned `nixos-unstable`
+and pinned `nixos-26.05` with
+
+```bash
+just test "test-gitlab-runner-unstable"
+just test "test-gitlab-runner-2605"
+```
 
 ## Development
 

@@ -1,12 +1,11 @@
-{ inputs, ... }: {
+{ ... }: {
   perSystem =
-    { system, ... }:
-    let
-      pkgs = import inputs.nixpkgs-gitlab { inherit system; };
-    in
+    { mvs, ... }:
     {
       packages = {
-        test-gitlab-runner = pkgs.testers.runNixOSTest (import ./runner.nix);
+        test-gitlab-runner-unstable = mvs.tip.testers.runNixOSTest (import ./runner.nix);
+
+        test-gitlab-runner-2605 = (mvs.at "26.05").testers.runNixOSTest (import ./runner.nix);
       };
     };
 }

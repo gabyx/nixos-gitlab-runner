@@ -40,7 +40,7 @@ build *args:
 
 # Test the project.
 [group('general')]
-test type="test-gitlab-runner" *args:
+test type="test-gitlab-runner-unstable" *args:
     #!/usr/bin/env bash
     set -eu
     just nix::build "{{type}}" "${@:2}"
