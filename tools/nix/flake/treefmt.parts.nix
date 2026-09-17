@@ -62,8 +62,8 @@
         };
 
         # Nix.
-        programs.deadnix.enable = true;
-        programs.statix.enable = true;
+        programs.deadnix.enable = false;
+        programs.statix.enable = false;
         programs.nixfmt.enable = true;
       };
     };

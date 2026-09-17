@@ -9,6 +9,7 @@
 #
 # Run with
 # [nixpkgs]$ nix-build -A nixosTests.gitlab.runner
+
 {
   pkgs,
   lib,
@@ -62,11 +63,11 @@ in
         ]
         # Include all runners which are enabled.
         ++ (lib.mapAttrsToList (
-          _k: runnerConfig:
+          k: runnerConfig:
           import runnerConfig.path {
             inherit runnerConfig;
           }
-        ) (lib.filterAttrs (_k: runnerCfg: runnerCfg.enabled) runnerConfigs));
+        ) (lib.filterAttrs (k: runnerCfg: runnerCfg.enabled) runnerConfigs));
 
         virtualisation = {
           diskSize = 10000;
@@ -136,14 +137,6 @@ in
   testScript =
     { nodes, ... }:
     let
-      authPayload = pkgs.writeText "auth.json" (
-        builtins.toJSON {
-          grant_type = "password";
-          username = "root";
-          password = initialRootPassword;
-        }
-      );
-
       runnerTokenEnv = pkgs.writeText "runner-token.env" ''
         CI_SERVER_URL=http://gitlab
         CI_SERVER_TOKEN=$token
@@ -161,7 +154,6 @@ in
       JQ_BINARY="${pkgs.jq}/bin/jq"
       GITLAB_STATE_PATH="${nodes.gitlab.services.gitlab.statePath}"
       RUNNER_TOKEN_ENV_FILE="${runnerTokenEnv}"
-      AUTH_PAYLOAD_FILE="${authPayload}"
       CREATE_RUNNER_PAYLOAD_FILE="${createRunnerPayload}"
 
       ${lib.readFile ./runner_test.py}

@@ -60,6 +60,8 @@
     nixpkgs.url = "github:nixos/nixpkgs?rev=d6524aaca2ff07876657ae2b323f24be4874944b";
     multiverse.url = "github:fzakaria/nixpkgs-multiverse";
 
+    nixpkgs-gitlab.url = "github:nixos/nixpkgs?rev=e2dba027dddb3080d3ff3c97270198bca5dcc17e";
+
     # Format the repo with nix-treefmt.
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";

@@ -75,7 +75,7 @@ let
         (pkgs.fetchFromGitHub {
           owner = "NixOS";
           repo = "nix";
-          rev = "2.35.2";
+          rev = "2.34.7";
           hash = "sha256-8QYnRyGOTm3h/Dp8I6HCmQzlO7C009Odqyp28pTWgcY=";
         })
         + "/docker.nix"
@@ -230,33 +230,35 @@ let
   # This is a trick to add the job images to the registry.
   # TODO: Can this be done better?
   # On `nix` also make the scratch directory world readable.
-  jobContainers = lib.concatMapAttrs (name: _image: {
-    "${name}-container" = {
-      imageFile = jobImgs.images.${name};
-      image = "${imageNames.${name}}:latest";
+  jobContainers = (
+    lib.concatMapAttrs (name: image: {
+      "${name}-container" = {
+        imageFile = jobImgs.images.${name};
+        image = "${imageNames.${name}}:latest";
 
-      extraOptions = [
-        "--volumes-from"
-        "nix-daemon-container:ro"
-      ];
+        extraOptions = [
+          "--volumes-from"
+          "nix-daemon-container:ro"
+        ];
 
-      dependsOn = [ "nix-daemon-container" ];
-      cmd = [ "true" ];
-    }
-    // (lib.optionalAttrs (name == "nix") {
-      volumes = [ "gitlab-runner-scratch:/scratch" ];
-      cmd = [
-        "chmod"
-        "777"
-        "/scratch"
-      ];
-    });
-  }) jobImgs.images;
+        dependsOn = [ "nix-daemon-container" ];
+        cmd = [ "true" ];
+      }
+      // (lib.optionalAttrs (name == "nix") {
+        volumes = [ "gitlab-runner-scratch:/scratch" ];
+        cmd = [
+          "chmod"
+          "777"
+          "/scratch"
+        ];
+      });
+    }) jobImgs.images
+  );
 
   # Do not restart systemd service for the job images.
   # Otherwise they get readded always.
   modifiedJobServices = lib.concatMapAttrs (
-    name: _image:
+    name: image:
     let
       serviceName = config.virtualisation.oci-containers.containers."${name}-container".serviceName;
     in

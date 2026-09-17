@@ -96,10 +96,10 @@ let
   }
   // lib.optionalAttrs (uid != 0) {
     "${uname}" = {
-      inherit uid;
+      uid = uid;
       shell = lib.getExe bashInteractive;
       home = "/home/${uname}";
-      inherit gid;
+      gid = gid;
       groups = [ "${gname}" ];
       description = "Nix user";
     };
@@ -125,27 +125,32 @@ let
     "${gname}".gid = gid;
   };
 
-  userToPasswd = k:
+  userToPasswd = (
+    k:
     {
       uid,
       gid ? 65534,
       home ? "/var/empty",
       description ? "",
       shell ? "/bin/false",
+      groups ? [ ],
     }:
-    "${k}:x:${toString uid}:${toString gid}:${description}:${home}:${shell}";
-  passwdContents = lib.concatStringsSep "\n" (lib.attrValues (lib.mapAttrs userToPasswd users));
+    "${k}:x:${toString uid}:${toString gid}:${description}:${home}:${shell}"
+  );
+  passwdContents = (lib.concatStringsSep "\n" (lib.attrValues (lib.mapAttrs userToPasswd users)));
 
-  userToShadow = k: _: "${k}:!:1::::::";
-  shadowContents = lib.concatStringsSep "\n" (lib.attrValues (lib.mapAttrs userToShadow users));
+  userToShadow = k: { ... }: "${k}:!:1::::::";
+  shadowContents = (lib.concatStringsSep "\n" (lib.attrValues (lib.mapAttrs userToShadow users)));
 
   # Map groups to members
   # {
   #   group = [ "user1" "user2" ];
   # }
-  groupMemberMap = let
+  groupMemberMap = (
+    let
       # Create a flat list of user/group mappings
-      mappings = builtins.foldl' (
+      mappings = (
+        builtins.foldl' (
           acc: user:
           let
             groups = users.${user}.groups or [ ];
@@ -154,15 +159,17 @@ let
           ++ map (group: {
             inherit user group;
           }) groups
-        ) [ ] (lib.attrNames users);
+        ) [ ] (lib.attrNames users)
+      );
     in
-    builtins.foldl' (
+    (builtins.foldl' (
       acc: v:
       acc
       // {
         ${v.group} = acc.${v.group} or [ ] ++ [ v.user ];
       }
-    ) { } mappings;
+    ) { } mappings)
+  );
 
   groupToGroup =
     k:
@@ -171,7 +178,7 @@ let
       members = groupMemberMap.${k} or [ ];
     in
     "${k}:x:${toString gid}:${lib.concatStringsSep "," members}";
-  groupContents = lib.concatStringsSep "\n" (lib.attrValues (lib.mapAttrs groupToGroup groups));
+  groupContents = (lib.concatStringsSep "\n" (lib.attrValues (lib.mapAttrs groupToGroup groups)));
 
   toConf =
     with pkgs.lib.generators;
@@ -212,7 +219,7 @@ let
         cat > $out <<EOF
         [
         ${lib.concatStringsSep "\n" (
-          builtins.map (
+          map (
             drv:
             let
               outputs = drv.outputsToInstall or [ "out" ];
@@ -220,11 +227,11 @@ let
             ''
               {
                 ${lib.concatStringsSep "\n" (
-                  builtins.map (output: ''
+                  map (output: ''
                     ${output} = { outPath = "${lib.getOutput output drv}"; };
                   '') outputs
                 )}
-                outputs = [ ${lib.concatStringsSep " " (builtins.map (x: "\"${x}\"") outputs)} ];
+                outputs = [ ${lib.concatStringsSep " " (map (x: "\"${x}\"") outputs)} ];
                 name = "${drv.name}";
                 outPath = "${drv}";
                 system = "${drv.system}";

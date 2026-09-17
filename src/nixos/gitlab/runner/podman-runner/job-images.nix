@@ -111,12 +111,12 @@ let
       inner = builder attrs;
       innerFull = builder (attrs // { includeStorePaths = true; });
       res = inner.overrideAttrs (
-        _f: _p: {
+        f: p: {
           # Some special attributes for separate inspection.
           passthru = {
             buildFull = innerFull;
             profileScript = initScripts.profile;
-            inherit (initScripts) entrypointScript;
+            entrypointScript = initScripts.entrypointScript;
           };
         }
       );
@@ -252,7 +252,7 @@ in
         maxLayers = 3;
       }).overrideAttrs
         (
-          _f: p: {
+          f: p: {
             passthru = p.passthru // {
               originalPasswd = getFileInBase imgConf "/etc/passwd";
               originalGroup = getFileInBase imgConf "/etc/group";
