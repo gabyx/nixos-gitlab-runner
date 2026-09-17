@@ -18,10 +18,12 @@
 
 This repository provides production ready NixOS gitlab runner configurations.
 
-> [!WARNING] The Gitlab runner tests are currently still maintained in nixpkgs.
-> The goal is to take the more elaborate runner with the `podman-executor` out
-> of nixpkgs and maintain it here as an example. This repository is currently in
-> beta and should be upstreamed in the future to
+> [!WARNING]
+>
+> The Gitlab runner tests are currently still maintained in nixpkgs. The goal is
+> to take the more elaborate runner with the `podman-executor` out of nixpkgs
+> and maintain it here as an example. This repository is currently in beta and
+> should be upstreamed in the future to
 > [https://github.com/nix-community](https://github.com/nix-community).
 
 ## Example
