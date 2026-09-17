@@ -50,7 +50,10 @@ For technical documentation on setup and development, see the
 
 ## Acknowledgement
 
-Acknowledge all contributors and external collaborators here.
+- [SDSC Zurich](www.datascience.ch)
+- The Gitlab
+  [maintainer team in nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/maintainers/team-list.nix).
+- The [Nix Community](https://discourse.nixos.org)
 
 ## Copyright
 
