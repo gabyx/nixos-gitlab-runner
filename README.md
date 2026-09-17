@@ -17,11 +17,21 @@ configurations.**
 
 > [!WARNING]
 >
-> The Gitlab runner tests are currently still maintained in nixpkgs. The goal is
-> to take the more elaborate runner with the `podman-executor` out of nixpkgs
-> and maintain it here as an example. This repository is currently in beta and
-> should be upstreamed in the future to
+> The Gitlab runner tests & documentation are currently still maintained in
+> nixpkgs. The goal is to take the more elaborate runner with the
+> `podman-executor` out of nixpkgs and maintain it here as an example. This
+> repository is currently in beta and should be upstreamed in the future to
 > [https://github.com/nix-community](https://github.com/nix-community).
+
+> [!NOTE]
+>
+> The Gitlab runner configuration
+> [podman-executor](src/nixos/gitlab/runner/podman-runner/default.nix) is
+> already used in production and works.
+
+## Documentation
+
+TODO
 
 ## Example
 
