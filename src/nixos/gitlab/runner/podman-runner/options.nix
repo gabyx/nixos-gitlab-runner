@@ -78,9 +78,13 @@ in
     '';
 
     registrationFlags = mkOption {
-      type = types.nullOr types.listOf types.str;
+      type = types.nullOr (types.listOf types.str);
+      apply =
+        v:
+        assert lib.assertMsg cfg.enable
+          "You must enable the module `service.gitlab-runner-podman` before using this option.";
+        v;
       readOnly = true;
-      default = null;
       description = ''
         Registration flags computed by this module, to be passed to
         {option}`services.gitlab-runner.services.<name>.registrationFlags`.
@@ -94,6 +98,11 @@ in
 
     preBuildScript = mkOption {
       type = types.package;
+      apply =
+        v:
+        assert lib.assertMsg cfg.enable
+          "You must enable the module `service.gitlab-runner-podman` before using this option.";
+        v;
       readOnly = true;
       description = ''
         The pre-build script computed by this module, to be passed to
@@ -419,7 +428,7 @@ in
 
     jobs = {
       defaultPackages = mkOption {
-        type = types.listOf types.packages;
+        type = types.listOf types.package;
         description = ''
           The default packages in every job container.
           These live in the `nix-daemon`'s `/nix/store` and only symlinks are maintained in

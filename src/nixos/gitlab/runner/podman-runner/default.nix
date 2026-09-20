@@ -242,7 +242,7 @@ in
 {
   imports = [ ./options.nix ];
 
-  configs = lib.mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Enable Podman.
     virtualisation.podman = {
       enable = true;
@@ -284,7 +284,7 @@ in
     systemd.services =
       let
         containers = config.virtualisation.oci-containers.containers;
-        nixDaemonSrv = containers."${cfg.nix-daemon.containerName}".serviceName;
+        nixDaemonSrv = containers.${cfg.nix-daemon.containerName}.serviceName;
       in
       modifiedJobServices
       // {
