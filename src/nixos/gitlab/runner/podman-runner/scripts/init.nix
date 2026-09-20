@@ -119,7 +119,11 @@ let
         dispatch "$@" >&2
       '';
 
+  all = [
+    entrypoint
+    profile
+  ];
 in
 {
-  inherit entrypoint profile;
+  inherit entrypoint profile all;
 }

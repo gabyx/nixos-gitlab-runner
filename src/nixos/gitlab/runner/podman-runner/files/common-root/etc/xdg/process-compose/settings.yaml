@@ -1,0 +1,3 @@
+# To make process-compose happy due to stupid error message.
+# that it does not find any config etc.
+theme: Default

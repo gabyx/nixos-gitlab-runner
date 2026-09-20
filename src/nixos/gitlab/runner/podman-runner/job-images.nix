@@ -1,8 +1,7 @@
 {
   lib,
   pkgs,
-  noPruneLabels,
-  imageNames,
+  cfg,
 }:
 let
   # This derivation will contain a folder `/etc`
@@ -77,9 +76,9 @@ let
       #          container open /var/lib/containers/storage/overlay/.../merged/nix/#        store/h95gjpn0n006pp5s9dkpdin386jbpv4p-basic-root-files/etc/group:
       #          no such file or directory
       # - We need to allow modification of nix config for cachix as
-      #   otherwise it is linked to the read only file in the store.
+      #   otherwise it is link to the read only file in the store.
       filesToMakeWritable=(
-        "etc/passwd" "etc/group" "etc/nsswitch.conf",
+        "etc/passwd" "etc/group" "etc/nsswitch",
         "etc/nix/nix.conf"
       )
       for f in "''${filesToMakeWritable[@]}"; do
@@ -152,19 +151,14 @@ let
       IMAGE_OS_DIST = "nix";
     };
 
+    alpine = common // {
+      IMAGE_OS_DIST = "alpine";
+    };
+
     ubuntu = common // {
       IMAGE_OS_DIST = "ubuntu";
     };
   };
-
-  mkStubDrv =
-    pkg:
-    pkgs.writeShellApplication {
-      name = "stub-${pkg.name}";
-      runtimeInputs = [ pkg ];
-      text = "echo 'Only a depend. stub for ${pkg}'";
-    };
-
 in
 {
   inherit preBuildScript;
@@ -173,14 +167,7 @@ in
   # which will end up in a `nix-daemon-store` volume.
   # The derivations which are taken out from the images
   # must be added here.
-  allStoreDrv = jobImagePkgs ++ [
-    files.fakeNixpkgs
-    (mkStubDrv files.nixImage)
-    (mkStubDrv files.ubuntuImage)
-
-    initScripts.profile
-    initScripts.entrypoint
-  ];
+  allStoreDrv = jobImagePkgs ++ files.all ++ initScripts.all;
 
   images = {
     # The Nix image.
@@ -210,6 +197,54 @@ in
       maxLayers = 2;
     };
 
+    # This is the analog image to `local/nix` but alpine based.
+    alpine =
+      let
+        # Update with:
+        # ```shell
+        # nix run "github:nixos/nixpkgs/nixos-unstable#nix-prefetch-docker" -- --image-name alpine --image-tag latest
+        # nix run ".#nixosConfigurations.gitlab-runner.config.virtualisation.oci-containers.containers.alpine-container.imageFile.originalPasswd"
+        # ```
+        imgConf = {
+          imageName = "alpine";
+          imageDigest = "sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d";
+          sha256 = "0gf7wbjp37zbni3pz8vdgq1mss6mz69wynms0gqhq7lsxfmg9xj9";
+          finalImageName = "alpine";
+          finalImageTag = "latest";
+        };
+        alpineBase = pkgs.dockerTools.pullImage imgConf;
+      in
+      (wrapWithStore pkgs.dockerTools.buildLayeredImage {
+        fromImage = alpineBase;
+        name = imageNames.alpine;
+        tag = "latest";
+
+        inherit extraCommands;
+        inherit fakeRootCommands;
+
+        contents = jobImagePkgs ++ [ files.alpineImage ];
+        # No store paths are copied into. We provide them by mounting the
+        # /nix/store.
+        includeStorePaths = false;
+
+        config = {
+          Labels = noPruneLabels;
+          Env = toEnvList envs.nix;
+          Entrypoint = [ "${lib.getExe initScripts.entrypoint}" ];
+        };
+
+        # Only if `build buildLayeredImage`.
+        maxLayers = 3;
+      }).overrideAttrs
+        (
+          f: p: {
+            passthru = p.passthru // {
+              originalPasswd = getFileInBase imgConf "/etc/passwd";
+              originalGroup = getFileInBase imgConf "/etc/group";
+            };
+          }
+        );
+
     # This is the analog image to `local/nix` but ubuntu based.
     ubuntu =
       let
@@ -217,8 +252,7 @@ in
         # ```shell
         # nix run "github:nixos/nixpkgs/nixos-unstable#nix-prefetch-docker" -- \
         #   --image-name ubuntu --image-tag latest
-        # nix run ".#nixosConfigurations.gitlab-runner.config.virtualisation.oci-containers.containers.ubuntu-container.imageFile.originalPasswd" > files/ubuntu-image/etc/passwd
-        # nix run ".#nixosConfigurations.gitlab-runner.config.virtualisation.oci-containers.containers.ubuntu-container.imageFile.originalGroup" > files/ubuntu-image/etc/group
+        # nix run ".#nixosConfigurations.gitlab-runner.config.virtualisation.oci-containers.containers.ubuntu-container.imageFile.originalPasswd"
         # ```
         imgConf = {
           imageName = "ubuntu";
