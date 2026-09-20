@@ -28,7 +28,7 @@ let
       enabled = true; # Works on all systems.
       desc = "Shell runner (host NixOS shell, host Nix store)";
       name = "shell";
-      path = ./runner/shell-runner.nix;
+      path = ./shell-runner;
       tokenFile = "${runnerTokenDir}/token-shell.env";
     };
 
@@ -43,7 +43,7 @@ let
       enabled = pkgs.stdenv.buildPlatform.isx86_64;
       desc = "Podman runner (containers, shared containerized Nix store)";
       name = "podman";
-      path = ./runner/podman-runner;
+      path = ./podman-runner;
       tokenFile = "${runnerTokenDir}/token-podman.env";
     };
   };
@@ -59,7 +59,9 @@ in
       { ... }:
       {
         imports = [
-          ../common/user-account.nix
+          ../../common/user-account.nix
+          ./virtualization.nix
+          ../runner/podman-runner
         ]
         # Include all runners which are enabled.
         ++ (lib.mapAttrsToList (
@@ -76,11 +78,9 @@ in
         # Define the Gitlab Runner.
         services.gitlab-runner = {
           enable = true;
-
           settings = {
             log_level = "info";
           };
-
           gracefulTermination = false;
         };
       };
@@ -88,7 +88,7 @@ in
     gitlab =
       { config, ... }:
       {
-        imports = [ ../common/user-account.nix ];
+        imports = [ ../../common/user-account.nix ];
 
         networking.firewall.allowedTCPPorts = [
           config.services.nginx.defaultHTTPListenPort

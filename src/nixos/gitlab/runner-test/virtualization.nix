@@ -34,7 +34,6 @@
       graphroot = "/var/lib/containers/storage";
       runroot = "/run/containers/storage";
 
-      # Does not work currently.
       options.overlay = {
         mountopt = "nodev,metacopy=on";
       };
