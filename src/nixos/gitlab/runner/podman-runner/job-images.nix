@@ -205,7 +205,7 @@ in
         includeStorePaths = false;
 
         config = {
-          Labels = cfg.noPruneLabels;
+          Labels = cfg.images.noPruneLabels;
           Env = toEnvList (envs.nix // img.env);
           Entrypoint = [ "${lib.getExe initScripts.entrypoint}" ];
         };
@@ -243,7 +243,7 @@ in
         includeStorePaths = false;
 
         config = {
-          Labels = cfg.noPruneLabels;
+          Labels = cfg.images.noPruneLabels;
           Env = toEnvList (envs.alpine // img.env);
           Entrypoint = [ "${lib.getExe initScripts.entrypoint}" ];
         };
@@ -291,7 +291,7 @@ in
         includeStorePaths = false;
 
         config = {
-          Labels = cfg.noPruneLabels;
+          Labels = cfg.images.noPruneLabels;
           Env = toEnvList (envs.ubuntu // img.env);
           Entrypoint = [ "${lib.getExe initScripts.entrypoint}" ];
         };

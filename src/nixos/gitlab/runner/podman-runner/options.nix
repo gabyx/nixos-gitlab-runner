@@ -1,5 +1,7 @@
-{ lib, ... }:
+{ config, lib, ... }:
 let
+  cfg = config.services.gitlab-runner-podman;
+
   inherit (lib) mkOption mkEnableOption types;
 
   addOpts = maxL: {
@@ -77,8 +79,8 @@ in
       builder = {
         enable = mkEnableOption "Enable building the image over the given function.";
         func = mkOption {
-          type = types.function;
-          default = import ./nix-images.nix;
+          type = types.functionTo types.package;
+          default = import ./nix-image.nix;
         };
       };
 
@@ -179,7 +181,7 @@ in
       };
       hash = mkOption {
         type = types.str;
-        default = "sha256-pXXCu13fB/RN9qx8iLhE5Kko6glTrFrRhR7fo2OS7V0=";
+        default = "sha256-PLnPZxb0N/wnj5JCCx6gmxOfqkTasZFMedXykSjxxcs=";
       };
 
       volumes = {
@@ -210,11 +212,9 @@ in
     };
 
     jobs = {
-      defaults = {
-        imageName = mkOption {
-          type = types.str;
-          default = "local/alpine";
-        };
+      defaultImageName = mkOption {
+        type = types.str;
+        default = "${cfg.jobs.alpine.name}:${cfg.jobs.alpine.tag}";
       };
 
       nix = {
@@ -254,7 +254,7 @@ in
         };
         hash = mkOption {
           type = types.str;
-          default = "sha256-pXXCu13fB/RN9qx8iLhE5Kko6glTrFrRhR7fo2OS7V0=";
+          default = "sha256-Sfb0quuaHgzxA7paz5P51WhdA35to39HtOufceXixz0=";
         };
 
         containerName = mkOption {

@@ -25,10 +25,6 @@
 let
   cfg = config.services.gitlab-runner-podman;
 
-  noPruneLabels = {
-    no-prune = "true";
-  };
-
   # Some scripts we use.
   updateNixStoreVolume = pkgs.callPackage ./scripts/copy-to-nix-store.nix {
     image = nixDaemonImage.imageName + ":" + nixDaemonImage.imageTag;
@@ -97,7 +93,7 @@ let
         "/nix/var/nix/db" = { };
         "/nix/var/nix/daemon-socket" = { };
       };
-      Labels = noPruneLabels;
+      Labels = cfg.images.noPruneLabels;
     };
 
     maxLayers = cfg.nix-daemon.maxLayers;
@@ -123,7 +119,7 @@ let
       inherit (cfg.podman-daemon) name tag;
 
       config = {
-        Labels = cfg.noPruneLabels;
+        Labels = cfg.images.noPruneLabels;
       };
     };
 

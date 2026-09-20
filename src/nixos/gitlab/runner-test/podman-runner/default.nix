@@ -19,7 +19,7 @@ in
     authenticationTokenConfigFile = runnerConfig.tokenFile;
 
     executor = "docker";
-    dockerImage = cfg.jobs.default.imageName;
+    dockerImage = cfg.jobs.defaultImageName;
     dockerAllowedImages = [ ];
     dockerPrivileged = false;
     requestConcurrency = 4;
