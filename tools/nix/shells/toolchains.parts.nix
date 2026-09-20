@@ -1,4 +1,4 @@
-_: {
+{ ... }: {
   perSystem =
     {
       self',
@@ -6,7 +6,7 @@ _: {
       ...
     }:
     {
-      toolchains.githooks = [
+      repo.toolchains.githooks = [
         {
           git-hooks = {
             enable = true;
@@ -20,7 +20,7 @@ _: {
         }
       ];
 
-      toolchains.general = [
+      repo.toolchains.general = [
         {
           packages = [
             self'.packages.bootstrap

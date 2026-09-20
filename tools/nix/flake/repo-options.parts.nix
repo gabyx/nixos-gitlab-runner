@@ -38,10 +38,12 @@ in
       ...
     }:
     {
-      options.toolchains = lib.mkOption {
-        description = "Attrset of toolchain definitions keyed by toolchain name, where each value is a list of devenv modules.";
-        default = { };
-        type = lib.types.attrsOf (lib.types.listOf lib.types.deferredModule);
+      options.repo = {
+        toolchains = lib.mkOption {
+          description = "Attrset of toolchain definitions keyed by toolchain name, where each value is a list of devenv modules.";
+          default = { };
+          type = lib.types.attrsOf (lib.types.listOf lib.types.deferredModule);
+        };
       };
     }
   );

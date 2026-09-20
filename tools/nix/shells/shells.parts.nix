@@ -11,7 +11,7 @@
     }:
     let
       args = config.allModuleArgs; # See https://flake.parts/module-arguments#obtaining-all-module-arguments
-      inherit (config) toolchains;
+      inherit (config.repo) toolchains;
     in
     {
       devShells.default = self.lib.shell.mkShell {

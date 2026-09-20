@@ -1,5 +1,6 @@
 # This test runs a gitlab-runner and performs the following tests in
 # two machines `gitlab` and `gitlab-runner`:
+#
 # - Create runners in the `gitlab` machine for all runners in `./runner`.
 # - Inject the runner tokens into the `gitlab-runner.service` (machine `gitlab-runner`)
 #   which runs all runners:
@@ -7,9 +8,8 @@
 # - Start the `gitlab-runner.service`.
 # - Check that all runners in `gitlab` are `active`.
 #
-# Run with
-# [nixpkgs]$ nix-build -A nixosTests.gitlab.runner
-
+# Run with `just test`.
+#
 {
   pkgs,
   lib,
@@ -84,6 +84,7 @@ in
           gracefulTermination = false;
         };
       };
+
     gitlab =
       { config, ... }:
       {
@@ -156,7 +157,7 @@ in
       RUNNER_TOKEN_ENV_FILE="${runnerTokenEnv}"
       CREATE_RUNNER_PAYLOAD_FILE="${createRunnerPayload}"
 
-      ${lib.readFile ./runner_test.py}
+      ${lib.readFile ./runner-test.py}
 
       start_all()
       wait_for_services()

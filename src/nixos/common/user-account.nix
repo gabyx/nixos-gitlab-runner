@@ -1,5 +1,4 @@
-_:
-
+{ ... }:
 {
   users.users.alice = {
     isNormalUser = true;
