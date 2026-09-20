@@ -104,6 +104,10 @@ let
       chown -R 1000:1000 home
     '';
 
+  # Add some passthru attributes to the image derivations with
+  # - the full image: full /nix/store
+  # - the profile script
+  # - the entrypoint script
   wrapWithStore =
     builder: attrs:
     let
@@ -167,74 +171,85 @@ in
   # which will end up in a `nix-daemon-store` volume.
   # The derivations which are taken out from the images
   # must be added here.
-  allStoreDrv = jobImagePkgs ++ files.all ++ initScripts.all;
+  allStoreDrv =
+    jobImagePkgs
+    ++ files.all
+    ++ initScripts.all
+    ++ cfg.jobs.nix.content
+    ++ cfg.jobs.ubuntu.content
+    ++ cfg.jobs.alpine.content;
 
   images = {
     # The Nix image.
-    nix = wrapWithStore pkgs.dockerTools.buildLayeredImage {
-      name = imageNames.nix;
-      tag = "latest";
+    nix =
+      let
+        img = cfg.jobs.nix;
+      in
+      wrapWithStore pkgs.dockerTools.buildLayeredImage {
+        inherit (img) name tag;
 
-      extraCommands = extraCommands + ''
-        set -eu -o pipefail
-        # For `/usr/bin/env`.
-        mkdir -p usr && ln -s ../bin usr/bin
-      '';
+        extraCommands =
+          extraCommands
+          + ''
+            set -eu -o pipefail
+            # For `/usr/bin/env`.
+            mkdir -p usr && ln -s ../bin usr/bin
+          ''
+          + img.extraCommands;
 
-      inherit fakeRootCommands;
+        fakeRootCommands = fakeRootCommands + img.fakeRootCommands;
 
-      contents = jobImagePkgs ++ [ files.nixImage ];
-      # No store paths are copied into. We provide them by mounting the
-      # /nix/store.
-      includeStorePaths = false;
+        contents = jobImagePkgs ++ [ files.nixImage ] ++ img.content;
+        # No store paths are copied into. We provide them by mounting the
+        # /nix/store.
+        includeStorePaths = false;
 
-      config = {
-        Labels = noPruneLabels;
-        Env = toEnvList envs.nix;
-        Entrypoint = [ "${lib.getExe initScripts.entrypoint}" ];
+        config = {
+          Labels = cfg.noPruneLabels;
+          Env = toEnvList (envs.nix // img.env);
+          Entrypoint = [ "${lib.getExe initScripts.entrypoint}" ];
+        };
+
+        inherit (img) maxLayers;
       };
-
-      maxLayers = 2;
-    };
 
     # This is the analog image to `local/nix` but alpine based.
     alpine =
       let
+        img = cfg.jobs.alpine;
+
         # Update with:
         # ```shell
         # nix run "github:nixos/nixpkgs/nixos-unstable#nix-prefetch-docker" -- --image-name alpine --image-tag latest
         # nix run ".#nixosConfigurations.gitlab-runner.config.virtualisation.oci-containers.containers.alpine-container.imageFile.originalPasswd"
         # ```
         imgConf = {
-          imageName = "alpine";
-          imageDigest = "sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d";
-          sha256 = "0gf7wbjp37zbni3pz8vdgq1mss6mz69wynms0gqhq7lsxfmg9xj9";
-          finalImageName = "alpine";
+          inherit (img) imageName imageDigest hash;
+          finalImageName = img.imageName;
           finalImageTag = "latest";
         };
         alpineBase = pkgs.dockerTools.pullImage imgConf;
       in
       (wrapWithStore pkgs.dockerTools.buildLayeredImage {
         fromImage = alpineBase;
-        name = imageNames.alpine;
-        tag = "latest";
+        inherit (img) name tag;
 
-        inherit extraCommands;
-        inherit fakeRootCommands;
+        extraCommands = extraCommands + img.extraCommands;
+        fakeRootCommands = fakeRootCommands + img.fakeRootCommands;
 
-        contents = jobImagePkgs ++ [ files.alpineImage ];
+        contents = jobImagePkgs ++ [ files.alpineImage ] ++ img.content;
         # No store paths are copied into. We provide them by mounting the
         # /nix/store.
         includeStorePaths = false;
 
         config = {
-          Labels = noPruneLabels;
-          Env = toEnvList envs.nix;
+          Labels = cfg.noPruneLabels;
+          Env = toEnvList (envs.alpine // img.env);
           Entrypoint = [ "${lib.getExe initScripts.entrypoint}" ];
         };
 
         # Only if `build buildLayeredImage`.
-        maxLayers = 3;
+        inherit (img) maxLayers;
       }).overrideAttrs
         (
           f: p: {
@@ -248,6 +263,8 @@ in
     # This is the analog image to `local/nix` but ubuntu based.
     ubuntu =
       let
+        img = cfg.jobs.ubuntu;
+
         # Update with:
         # ```shell
         # nix run "github:nixos/nixpkgs/nixos-unstable#nix-prefetch-docker" -- \
@@ -255,35 +272,32 @@ in
         # nix run ".#nixosConfigurations.gitlab-runner.config.virtualisation.oci-containers.containers.ubuntu-container.imageFile.originalPasswd"
         # ```
         imgConf = {
-          imageName = "ubuntu";
-          imageDigest = "sha256:1e622c5f073b4f6bfad6632f2616c7f59ef256e96fe78bf6a595d1dc4376ac02";
-          hash = "sha256-aC8SgxdcMSaaU89YMr/uwE022Yqey2frmeZqr+L1xEU=";
-          finalImageName = "ubuntu";
+          inherit (img) imageName imageDigest hash;
+          finalImageName = img.imageName;
           finalImageTag = "latest";
         };
         ubuntuBase = pkgs.dockerTools.pullImage imgConf;
       in
       (wrapWithStore pkgs.dockerTools.buildLayeredImage {
         fromImage = ubuntuBase;
-        name = imageNames.ubuntu;
-        tag = "latest";
+        inherit (img) name tag;
 
-        inherit extraCommands;
-        inherit fakeRootCommands;
+        extraCommands = extraCommands + img.extraCommands;
+        fakeRootCommands = fakeRootCommands + img.fakeRootCommands;
 
-        contents = jobImagePkgs ++ [ files.ubuntuImage ];
+        contents = jobImagePkgs ++ [ files.ubuntuImage ] ++ img.content;
         # No store paths are copied into. We provide them by mounting the
         # /nix/store.
         includeStorePaths = false;
 
         config = {
-          Labels = noPruneLabels;
-          Env = toEnvList envs.ubuntu;
+          Labels = cfg.noPruneLabels;
+          Env = toEnvList (envs.ubuntu // img.env);
           Entrypoint = [ "${lib.getExe initScripts.entrypoint}" ];
         };
 
         # Only if `build buildLayeredImage`.
-        maxLayers = 3;
+        inherit (img) maxLayers;
       }).overrideAttrs
         (
           f: p: {
