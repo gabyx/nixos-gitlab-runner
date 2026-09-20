@@ -24,22 +24,14 @@ let
     pkgs.cacert
 
     # Other stuff.
-    (lib.hiPrio pkgs.coreutils)
-    (lib.hiPrio pkgs.findutils)
-    pkgs.openssh
-    pkgs.bashInteractive
-    (lib.hiPrio pkgs.git)
-    pkgs.cachix
-
-    pkgs.just
-    pkgs.podman # For nested containers.
     pkgs.gnugrep # Gitlab Runner somehow needs this before prebuild script (?)
 
     preBuildScript
 
     files.containers
     files.commonRoot
-  ];
+  ]
+  ++ cfg.jobs.defaultPackages;
 
   extraCommands =
     # bash
@@ -78,7 +70,7 @@ let
       # - We need to allow modification of nix config for cachix as
       #   otherwise it is link to the read only file in the store.
       filesToMakeWritable=(
-        "etc/passwd" "etc/group" "etc/nsswitch",
+        "etc/passwd" "etc/group" "etc/nsswitch.conf"
         "etc/nix/nix.conf"
       )
       for f in "''${filesToMakeWritable[@]}"; do

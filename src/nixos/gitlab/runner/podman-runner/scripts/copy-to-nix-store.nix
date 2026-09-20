@@ -5,8 +5,8 @@
   podman,
   coreutils,
   imageDrv,
-  image ? "local/nix-daemon",
-  podman-volume ? "nix-daemon-store",
+  image,
+  podman-volume,
 }:
 writeShellApplication {
   name = "gitlab-runner-copy-to-nix-store";

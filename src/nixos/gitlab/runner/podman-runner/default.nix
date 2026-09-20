@@ -5,7 +5,6 @@
 # Check the documentation in the NixOS Manual.
 #
 # Debugging on the VM:
-#
 # - You can use `journalctl -u gitlab-runner.service`.
 #
 # - To run a job container inside the VM use:
@@ -29,6 +28,7 @@ let
   updateNixStoreVolume = pkgs.callPackage ./scripts/copy-to-nix-store.nix {
     image = nixDaemonImage.imageName + ":" + nixDaemonImage.imageTag;
     imageDrv = nixDaemonImage;
+    podman-volume = cfg.nix-daemon.volumes.store.name;
   };
 
   # These derivations are symlinked into the job images root dir.
@@ -37,11 +37,12 @@ let
   };
 
   # This is the Nix base image used for the Nix Daemon.
-  # The build script for the nixos/nix image is vendored due to Hydra limitations.
-  # cause it is IFD (Import from Derivation) which is not allowed.
-  # You can set `cfg.images.nix-daemon.`
+  # The build script for the nixos/nix image is vendored due to Hydra limitations
+  # cause fetching it is an IFD (Import from Derivation) which is not allowed.
+  # Set `services.gitlab-runner-podman.nix-daemon.builder.enable = false` to
+  # fetch `docker.nix` from the `NixOS/nix` repository instead.
   nixImageBaseFn =
-    if cfg.nix-daemon.builder.enable != null then
+    if cfg.nix-daemon.builder.enable then
       cfg.nix-daemon.builder.func
     else
       import (
@@ -94,6 +95,11 @@ let
         "/nix/var/nix/daemon-socket" = { };
       };
       Labels = cfg.images.noPruneLabels;
+    }
+    # Only set `Env` when configured, an empty list would drop the
+    # environment inherited from the base image.
+    // lib.optionalAttrs (cfg.nix-daemon.env != { }) {
+      Env = lib.mapAttrsToList (k: v: "${k}=${v}") cfg.nix-daemon.env;
     };
 
     maxLayers = cfg.nix-daemon.maxLayers;
@@ -236,78 +242,87 @@ in
 {
   imports = [ ./options.nix ];
 
-  # Enable Podman.
-  virtualisation.podman = {
-    enable = true;
-    autoPrune = lib.mkIf cfg.autoPrune.enable {
-      dates = "daily";
-      flags = [
-        "--filter"
-        "label!=no-prune"
-        "--volumes"
-        "--log-level"
-        "debug"
-      ];
-    };
-  };
+  configs = lib.mkIf cfg.enable {
+    # Enable Podman.
+    virtualisation.podman = {
+      enable = true;
+      autoPrune = lib.mkIf cfg.autoPrune.enable {
+        enable = true;
+        dates = "daily";
 
-  # Set computed stuff on config.
-  services.gitlab-runner-podman = {
-    inherit registrationFlags;
-    inherit (jobImgs) preBuildScript;
-  };
-
-  # Register all containers.
-  virtualisation.oci-containers = {
-    backend = "podman";
-    containers = jobContainers // {
-      "${cfg.nix-daemon.containerName}" = nixDaemonContainer;
-      "${cfg.podman-daemon.containerName}" = podmanDaemonContainer;
-    };
-  };
-
-  # Define some systemd modifications.
-  systemd.services =
-    let
-      containers = config.virtualisation.oci-containers.containers;
-      nixDaemonSrv = containers."${cfg.nix-daemon.containerName}".serviceName;
-    in
-    modifiedJobServices
-    // {
-      # Update Nix store in the daemon service.
-      # The job images do not contain any actual store paths and are very small.
-      # We add `allStoreDrvs` to the nix store volume `nix-daemon-store` of the
-      # `nixDaemonImageBase` to make everything available on the job images
-      # (they mount `nix-daemon-store`).
-      # But when you delete the volume for cleanup or space reasons, this
-      # service initializes the store correctly again.
-      # Note: Podman, when starting the `nix-daemon-container`, copies all `/nix/store` paths
-      # from the image to the `nix-daemon-store` volume before running it.
-      update-nix-daemon-store = {
-        description = "update-nix-daemon-store";
-        restartIfChanged = true;
-        wantedBy = [ "multi-user.target" ];
-
-        # Ensure that the bootstrap is restarted when `nix-daemon-container` is.
-        partOf = [ "${nixDaemonSrv}.service" ];
-
-        script = ''
-          ${lib.getExe updateNixStoreVolume}
-        '';
-
-        serviceConfig = {
-          Type = "oneshot";
-          SupplementaryGroups = "podman";
-          User = "root";
-          StandardOutput = "journal";
-          StandardError = "journal";
-        };
+        # Never prune the images built by this module, they would need to be
+        # rebuilt on the next job.
+        flags =
+          (lib.concatMap (label: [
+            "--filter"
+            "label!=${label}"
+          ]) (lib.attrNames cfg.images.noPruneLabels))
+          ++ [
+            "--volumes"
+            "--log-level"
+            "debug"
+          ];
       };
-
-      # Start 'nix-daemon-container' after the update of the volume.
-      "${nixDaemonSrv}".after = [ "update-nix-daemon-store.service" ];
-
-      # Start Runner after nix-daemon-container.
-      gitlab-runner.after = [ "${nixDaemonSrv}.service" ];
     };
+
+    # Set computed stuff on config.
+    services.gitlab-runner-podman = {
+      inherit registrationFlags;
+      inherit (jobImgs) preBuildScript;
+    };
+
+    # Register all containers.
+    virtualisation.oci-containers = {
+      backend = "podman";
+      containers = jobContainers // {
+        "${cfg.nix-daemon.containerName}" = nixDaemonContainer;
+        "${cfg.podman-daemon.containerName}" = podmanDaemonContainer;
+      };
+    };
+
+    # Define some systemd modifications.
+    systemd.services =
+      let
+        containers = config.virtualisation.oci-containers.containers;
+        nixDaemonSrv = containers."${cfg.nix-daemon.containerName}".serviceName;
+      in
+      modifiedJobServices
+      // {
+        # Update Nix store in the daemon service.
+        # The job images do not contain any actual store paths and are very small.
+        # We add `allStoreDrvs` to the nix store volume `nix-daemon-store` of the
+        # `nixDaemonImageBase` to make everything available on the job images
+        # (they mount `nix-daemon-store`).
+        # But when you delete the volume for cleanup or space reasons, this
+        # service initializes the store correctly again.
+        # Note: Podman, when starting the `nix-daemon-container`, copies all `/nix/store` paths
+        # from the image to the `nix-daemon-store` volume before running it.
+        update-nix-daemon-store = {
+          description = "update-nix-daemon-store";
+          restartIfChanged = true;
+          wantedBy = [ "multi-user.target" ];
+
+          # Ensure that the bootstrap is restarted when `nix-daemon-container` is.
+          partOf = [ "${nixDaemonSrv}.service" ];
+
+          script = ''
+            ${lib.getExe updateNixStoreVolume}
+          '';
+
+          serviceConfig = {
+            Type = "oneshot";
+            SupplementaryGroups = "podman";
+            User = "root";
+            StandardOutput = "journal";
+            StandardError = "journal";
+          };
+        };
+
+        # Start 'nix-daemon-container' after the update of the volume.
+        "${nixDaemonSrv}".after = [ "update-nix-daemon-store.service" ];
+
+        # Start Runner after nix-daemon-container.
+        gitlab-runner.after = [ "${nixDaemonSrv}.service" ];
+      };
+  };
 }
