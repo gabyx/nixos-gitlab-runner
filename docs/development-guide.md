@@ -12,3 +12,21 @@ specification for commit messages and pull/merge-request titles.
 
 <!-- Additional 'scopes' should be described here.-->
 <!-- ### Scopes -->
+
+## Running the Tests
+
+Additionaly you can run the interactive driver:
+
+```bash
+test="test-gitlab-runner-unstable";
+just test "$test.driverInteractive"
+
+./.output/package/$test.driverInteractive/bin/nixos-test-driver
+```
+
+Then in the interactive ipython shell you can lunch the individual services
+like:
+
+```bash
+gitlab_runner.start()
+```
