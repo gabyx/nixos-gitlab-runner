@@ -183,10 +183,10 @@ which must run as `root` and does the following:
 - The job containers do **not** mount the `podman` socket from the host (NixOS
   VM) mounted for security reasons.
 
-  > [!NOTE]
-  >
-  > Building container images with `buildah` (stripped `podman` for building
-  > images) inside a job which runs `local/alpine` is still possible.
+> [!NOTE]
+>
+> Building container images with `buildah` (stripped `podman` for building
+> images) inside a job which runs `local/alpine` is still possible.
 
 #### Cleanup Disk Space
 
