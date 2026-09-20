@@ -157,10 +157,10 @@ which must run as `root` and does the following:
     across all jobs in **all** runners. This makes **the host VM's `/nix/store`
     independent of the Nix store used in the jobs**, which is good.
 
-    > [!NOTE]
-    >
-    > **Security:** If you don't want this you need multiple `local/nix-daemon`
-    > containers for each registered runner (`gitlab-runner.services.<name>`).
+> [!NOTE]
+>
+> **Security:** If you don't want this you need multiple `local/nix-daemon`
+> containers for each registered runner (`gitlab-runner.services.<name>`).
 
 #### Podman inside Job Container
 
