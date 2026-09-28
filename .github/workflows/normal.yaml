@@ -53,7 +53,7 @@ jobs:
     steps:
       - name: Verify all matrix jobs passed.
         run: |
-          if [[ "${{ needs.tests.result }}" != "success" ]]; then
-            echo "One or more checks failed: ${{ needs.tests.result }}"
+          if [[ "${{ needs.vm-tests.result }}" != "success" ]]; then
+            echo "One or more checks failed: ${{ needs.vm-tests.result }}"
             exit 1
           fi
