@@ -40,8 +40,9 @@ build *args:
 
 # Test the project.
 [group('general')]
-test type="test-gitlab-runner-unstable" *args:
+test type="test-gitlab-runner-unstable.driver" *args:
     #!/usr/bin/env bash
     set -eu
-    just nix::build "{{type}}" "${@:2}"
+    just nix::run "{{type}}" "${@:2}"
+
 

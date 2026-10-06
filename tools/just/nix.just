@@ -24,6 +24,20 @@ develop *args:
         "$flake_dir#$shell" \
         --command "${args[@]}"
 
+# Run a package in the `packages` output of `flake.nix`
+[no-cd]
+run attrname *args:
+    #!/usr/bin/env bash
+    set -eu
+    root_dir=$(git rev-parse --show-toplevel) || exit 1
+    flake_dir="$root_dir/tools/nix"
+    nix_args=("${@:2}")
+
+    nix run \
+        --accept-flake-config \
+        "${nix_args[@]}" \
+        -L "$flake_dir#{{attrname}}"
+
 # Start an Nix interpreter with loaded flake.
 [no-cd]
 repl *args:
