@@ -29,6 +29,20 @@ configurations.**
 > [podman-executor](src/nixos/gitlab/runner/podman-runner/default.nix) is
 > already used in production and works.
 
+## Other Solutions
+
+If you dont want to host your own runner with a Nix cache and just need a
+solution which caches the Nix store on Gitlab (similar to
+[hestia](https://github.com/Mic92/hestia)):
+
+- Use the the `before` and `after` scripts in
+  [https://gitlab.com/Cynerd/gitlab-ci-nix](https://gitlab.com/Cynerd/gitlab-ci-nix).
+
+  ```shell
+  nix build "gitlab:cynerd/gitlab-ci-nix#x86_64-linux-cache-before-script"
+  nix build "gitlab:cynerd/gitlab-ci-nix#x86_64-linux-cache-after-script"
+  ```
+
 ## Usage
 
 In a NixOS configuration do:
