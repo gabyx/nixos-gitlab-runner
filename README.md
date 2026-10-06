@@ -86,6 +86,17 @@ in
 }
 ```
 
+## Example
+
+Run a NixOS VM example with
+
+```shell
+just test-vm
+```
+
+The state of the VM is managed in `.output/state/vm-example`. You **should** be
+able to set the `.output/state/vm-example/secret/token.env`
+
 ## The `podman` Executor
 
 The [`podman-executor`](./src/nixos/gitlab/runner/podman-runner) NixOS module
