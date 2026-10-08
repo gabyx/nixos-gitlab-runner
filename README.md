@@ -35,7 +35,7 @@ If you dont want to host your own runner with a Nix cache and just need a
 solution which caches the Nix store on Gitlab (similar to
 [hestia](https://github.com/Mic92/hestia)):
 
-- Use the the `before` and `after` scripts in
+- Use the `before` and `after` scripts in
   [https://gitlab.com/Cynerd/gitlab-ci-nix](https://gitlab.com/Cynerd/gitlab-ci-nix).
 
   ```shell
