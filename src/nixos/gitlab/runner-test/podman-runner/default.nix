@@ -4,7 +4,9 @@ let
   cfg = config.services.gitlab-runner-podman;
 in
 {
-  services.gitlab-runner-podman.enable = true;
+  services.gitlab-runner-podman = {
+    enable = true;
+  };
 
   # Define the Gitlab Runner.
   services.gitlab-runner.services.podman-runner = {

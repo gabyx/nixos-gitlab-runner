@@ -4,7 +4,7 @@
     isNormalUser = true;
     description = "Alice Foobar";
     password = "foobar";
-    uid = 1000;
+    uid = 1001;
   };
 
   users.users.bob = {
