@@ -59,7 +59,6 @@ in
       { ... }:
       {
         imports = [
-          ../../common/user-account.nix
           ./virtualization.nix
           ../runner/podman-runner
         ]
@@ -88,7 +87,6 @@ in
     gitlab =
       { config, ... }:
       {
-        imports = [ ../../common/user-account.nix ];
 
         networking.firewall.allowedTCPPorts = [
           config.services.nginx.defaultHTTPListenPort
