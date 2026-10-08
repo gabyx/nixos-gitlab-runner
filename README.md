@@ -26,6 +26,27 @@ configurations.**
 > [podman-executor](src/nixos/gitlab/runner/podman-runner/default.nix) is
 > [already used](#production-examples) in production and works.
 
+<!--toc:start-->
+
+- [Other Solutions](#other-solutions)
+- [Usage](#usage)
+- [Examples](#examples)
+  - [VM Demo](#vm-demo)
+  - [In Production](#in-production)
+- [NixOS Module `gitlab-runner-podman`](#nixos-module-gitlab-runner-podman)
+  - [Images](#images)
+    - [Container Images for Gitlab Jobs](#container-images-for-gitlab-jobs)
+      - [Entrypoint](#entrypoint)
+    - [Images for CI Setup](#images-for-ci-setup)
+    - [Job Containers](#job-containers)
+    - [Podman inside Job Container](#podman-inside-job-container)
+    - [Cleanup Disk Space](#cleanup-disk-space)
+- [Tests](#tests)
+- [Development](#development)
+- [Acknowledgement](#acknowledgement)
+
+<!--toc:end-->
+
 ## Other Solutions
 
 If you dont want to host your own runner with a Nix cache and just need a
