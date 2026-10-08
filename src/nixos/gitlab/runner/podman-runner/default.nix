@@ -203,56 +203,32 @@ let
     "if-not-present"
   ]);
 
-  # Define the containers for the jobs.
-  # This is a trick to add the job images to the registry.
-  # TODO: Can this be done better?
-  # On `nix` also make the scratch directory world readable.
-  jobContainers = (
-    lib.concatMapAttrs (
-      name: image:
-      let
-        imgCfg = cfg.jobs.${name};
-      in
-      {
-        "${imgCfg.containerName}" = {
-          imageFile = image;
-          image = "${imgCfg.name}:${imgCfg.tag}";
-
-          extraOptions = [
-            "--volumes-from"
-            "${cfg.nix-daemon.containerName}:ro"
-          ];
-
-          dependsOn = [ cfg.nix-daemon.containerName ];
-          cmd = [ "true" ];
-        }
-        // (lib.optionalAttrs (name == "nix") {
-          volumes = [ "${cfg.volumes.scratch.name}:/scratch" ];
-          cmd = [
-            "chmod"
-            "777"
-            "/scratch"
-          ];
-        });
-      }
-    ) jobImgs.images
-  );
-
-  # Do not restart systemd service for the job images.
-  # Otherwise they get readded always.
-  modifiedJobServices = lib.concatMapAttrs (
-    name: image:
+  # Init container to setup stuff.
+  setupContainers =
     let
-      imgCfg = cfg.jobs.${name};
-      containers = config.virtualisation.oci-containers.containers;
-      serviceName = containers."${imgCfg.containerName}".serviceName;
+      imgCfg = cfg.jobs.nix;
+      image = jobImgs.images.nix;
     in
     {
-      "${serviceName}".serviceConfig = {
-        Restart = lib.mkForce "no";
+      setup-scratch = {
+        imageFile = image;
+        image = "${imgCfg.name}:${imgCfg.tag}";
+
+        extraOptions = [
+          "--volumes-from"
+          "${cfg.nix-daemon.containerName}:ro"
+        ];
+
+        dependsOn = [ cfg.nix-daemon.containerName ];
+
+        volumes = [ "${cfg.volumes.scratch.name}:/scratch" ];
+        cmd = [
+          "chmod"
+          "777"
+          "/scratch"
+        ];
       };
-    }
-  ) jobImgs.images;
+    };
 in
 {
   imports = [ ./options.nix ];
@@ -302,7 +278,7 @@ in
         "${cfg.nix-daemon.containerName}" = nixDaemonContainer;
         "${cfg.podman-daemon.containerName}" = podmanDaemonContainer;
       }
-      // (lib.optionalAttrs (cfg.jobs.enable) jobContainers);
+      // setupContainers;
     };
 
     # Define some systemd modifications.
