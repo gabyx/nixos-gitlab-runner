@@ -38,13 +38,13 @@ in
 
     # Job images for the runner.
     jobs = {
-      # Additional packages in the `local/alpine` job image. They are registered
-      # as garbage collector roots in the Nix daemon container, such that they
-      # survive a garbage collection.
-      alpine.content = [
-        pkgs.jq
-        pkgs.rsync
-      ];
+      # Additional packages in all job images.
+      packagesFunc =
+        { pkgs, defaultPackages }:
+        [
+          pkgs.just
+        ]
+        ++ defaultPackages;
     };
   };
 

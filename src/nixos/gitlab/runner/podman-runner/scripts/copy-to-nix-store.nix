@@ -1,12 +1,13 @@
 # Script to copy all derivations from a podman `image`
-# to the nix store in volume `podman-volume`.
+# to the nix store in volume `volume-nix-store` and update the `volume-nix-db`.
 {
   writeShellApplication,
   podman,
   coreutils,
   imageDrv,
   image,
-  podman-volume,
+  volume-nix-store,
+  volume-nix-db,
 }:
 writeShellApplication {
   name = "gitlab-runner-copy-to-nix-store";
@@ -21,13 +22,15 @@ writeShellApplication {
       set -e
       set -u
 
-      if ! podman volume inspect "${podman-volume}"; then
-        echo "No '${podman-volume}' volume found -> Skip copy derivation to it"
-        exit 0
-      fi
+      for vol in "${volume-nix-store}" "${volume-nix-db}"; do
+        if ! podman volume inspect "$vol" >/dev/null; then
+          echo "No '$vol' volume found -> Skip copy derivations to ${volume-nix-store}." >&2
+          exit 0
+        fi
+      done
 
       if ! podman image inspect "${image}"; then
-        echo "Image not know, load it."
+        echo "Image not know, load it." >&2
         podman load -i "${imageDrv}"
       fi
 
@@ -43,12 +46,13 @@ writeShellApplication {
       echo "Podman images:"
       podman images
 
-      echo "Copy pkgs to '${podman-volume}' from '${image}'."
+      echo "Copy pkgs to '${volume-nix-store}' from '${image}'."
       podman run --rm \
-          -v "${podman-volume}:/nix-custom/nix/store" \
+          -v "${volume-nix-store}:/nix-custom/nix/store" \
+          -v "${volume-nix-db}:/nix-custom/nix/var/nix/db" \
           "${image}" \
           bash -c "$CMD"
 
-      echo "Successfully copied packages to '${podman-volume}'."
+      echo "Successfully copied packages to '${volume-nix-store}'."
     '';
 }

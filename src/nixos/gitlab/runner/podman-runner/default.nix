@@ -30,7 +30,8 @@ let
   updateNixStoreVolume = pkgs.callPackage ./scripts/copy-to-nix-store.nix {
     image = nixDaemonImage.imageName + ":" + nixDaemonImage.imageTag;
     imageDrv = nixDaemonImage;
-    podman-volume = cfg.nix-daemon.volumes.store.name;
+    volume-nix-store = cfg.nix-daemon.volumes.store.name;
+    volume-nix-db = cfg.nix-daemon.volumes.db.name;
   };
 
   # These derivations are symlinked into the job images root dir.
