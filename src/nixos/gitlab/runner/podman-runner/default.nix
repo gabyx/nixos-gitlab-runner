@@ -246,6 +246,13 @@ in
     # Enable Podman.
     virtualisation.podman = {
       enable = true;
+
+      dockerSocket = {
+        # Needed for gitlab-runner to set the correct permissions.
+        # on the gitlab-runner systemd service.
+        enable = true;
+      };
+
       autoPrune = lib.mkIf cfg.autoPrune.enable {
         enable = true;
         dates = "daily";
