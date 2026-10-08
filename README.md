@@ -53,7 +53,7 @@ in
   # Import the NixOS module.
   import = [ inputs.nixos-gitlab-runner.nixosModules.gitlab-runner-podman ];
 
-  # Enable it.
+  # Enable the setup for a podman executuor.
   services.gitlab-runner-podman.enable = true;
 
   # Define a runner.
@@ -83,9 +83,12 @@ in
 }
 ```
 
-## Example
+## Examples
 
-Run a NixOS VM example with
+### VM Demo
+
+Run the `qemu` VM with to demo/inspect a simple NixOS system
+[`examples/vm-example`](./examples/vm-example):
 
 ```shell
 just test-vm
@@ -94,7 +97,11 @@ just test-vm
 The state of the VM is managed in `.output/state/vm-example`. You **should** be
 able to set the `.output/state/vm-example/secret/token.env`
 
-## The `podman` Executor
+### In Production
+
+- [SDSC Gitlab Runner](https://github.com/sdsc-ordes/cloud-infra-public/tree/main/components/vm-gitlab-runner/system)
+
+## NixOS Module `gitlab-runner-podman`
 
 The [`podman-executor`](./src/nixos/gitlab/runner/podman-runner) NixOS module
 gives a **more elaborate** example how to configure a Gitlab Runner with caching
@@ -237,21 +244,6 @@ podman volume rm -f --all
 reboot
 # Systemd will restart all containers and create volumes etc.
 ```
-
-## Example
-
-### Simple VM
-
-Run the `qemu` VM with to demo/inspect a simple NixOS system
-[`examples/vm-example`](./examples/vm-example):
-
-```bash
-just test-vm
-```
-
-### Production Examples
-
-- [SDSC Gitlab Runner](https://github.com/sdsc-ordes/cloud-infra-public/tree/main/components/vm-gitlab-runner/system)
 
 ## Tests
 
