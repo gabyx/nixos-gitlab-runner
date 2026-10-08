@@ -36,13 +36,16 @@ in
     # once a day. All images built by this module carry that label.
     autoPrune.enable = true;
 
-    # Additional packages in the `local/alpine` job image. They are registered
-    # as garbage collector roots in the Nix daemon container, such that they
-    # survive a garbage collection.
-    jobs.alpine.content = [
-      pkgs.jq
-      pkgs.rsync
-    ];
+    # Job images for the runner.
+    jobs = {
+      # Additional packages in the `local/alpine` job image. They are registered
+      # as garbage collector roots in the Nix daemon container, such that they
+      # survive a garbage collection.
+      alpine.content = [
+        pkgs.jq
+        pkgs.rsync
+      ];
+    };
   };
 
   services.gitlab-runner = {
@@ -61,15 +64,7 @@ in
       # `cfg.registrationFlags` wires the job container to the scratch volume,
       # to the podman daemon socket and to the read-only Nix store of the Nix
       # daemon container. Append your own flags here.
-      registrationFlags = cfg.registrationFlags ++ [
-        # Only use images which are already in the local image store: all of
-        # them are built by Nix, nothing is pulled from a registry.
-        "--docker-pull-policy"
-        "if-not-present"
-
-        "--docker-allowed-pull-policies"
-        "if-not-present"
-      ];
+      registrationFlags = cfg.registrationFlags;
 
       authenticationTokenConfigFile = tokenFile;
 
