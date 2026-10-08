@@ -243,6 +243,8 @@ in
   imports = [ ./options.nix ];
 
   config = lib.mkIf cfg.enable {
+    virtualisation.docker.enable = false;
+
     # Enable Podman.
     virtualisation.podman = {
       enable = true;
