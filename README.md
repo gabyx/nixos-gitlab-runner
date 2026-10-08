@@ -233,7 +233,7 @@ which must run as `root` and does the following:
   containers to ensure `podman` works consistently inside the job containers.
 
 - The job containers do **not** mount the `podman` socket from the host (NixOS
-  VM) mounted for security reasons.
+  VM) for security reasons.
 
 > [!NOTE]
 >
