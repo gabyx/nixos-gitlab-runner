@@ -295,7 +295,7 @@ in
         };
 
         # Load all job images.
-        load-job-images = lib.mkIf (cfg.jobs.enable) {
+        podman-load-job-images = lib.mkIf (cfg.jobs.enable) {
           description = "Load all job images into podman.";
           wantedBy = [ "multi-user.target" ];
           after = [
