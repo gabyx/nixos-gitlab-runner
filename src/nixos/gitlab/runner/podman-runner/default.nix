@@ -76,7 +76,7 @@ let
     #       which uses `buildEnv` which collides.
     fakeRootCommands =
       let
-        allPkgs = jobImgs.allStoreDrv ++ cfg.nix-daemon.content;
+        allPkgs = cfg.nix-daemon.content ++ (lib.optionals cfg.jobs.enable jobImgs.allStoreDrv);
       in
       # bash
       ''
@@ -186,7 +186,16 @@ let
 
     "--docker-network-mode"
     "bridge"
-  ];
+  ]
+  ++ (lib.optionals (cfg.jobs.enable) [
+    # Only use images from the local store: the job images are built by Nix
+    # and exist in the store, so dont pull them.
+    "--docker-pull-policy"
+    "if-not-present"
+
+    "--docker-allowed-pull-policies"
+    "if-not-present"
+  ]);
 
   # Define the containers for the jobs.
   # This is a trick to add the job images to the registry.
@@ -283,10 +292,11 @@ in
     # Register all containers.
     virtualisation.oci-containers = {
       backend = "podman";
-      containers = jobContainers // {
+      containers = {
         "${cfg.nix-daemon.containerName}" = nixDaemonContainer;
         "${cfg.podman-daemon.containerName}" = podmanDaemonContainer;
-      };
+      }
+      // (lib.optionalAttrs (cfg.jobs.enable) jobContainers);
     };
 
     # Define some systemd modifications.
@@ -296,7 +306,7 @@ in
         nixDaemonSrv = containers.${cfg.nix-daemon.containerName}.serviceName;
       in
       modifiedJobServices
-      // {
+      // (lib.optionalAttrs (cfg.jobs.enable) {
         # Update Nix store in the daemon service.
         # The job images do not contain any actual store paths and are very small.
         # We add `allStoreDrvs` to the nix store volume `nix-daemon-store` of the
@@ -329,7 +339,8 @@ in
 
         # Start 'nix-daemon-container' after the update of the volume.
         "${nixDaemonSrv}".after = [ "update-nix-daemon-store.service" ];
-
+      })
+      // {
         # Start Runner after nix-daemon-container.
         gitlab-runner.after = [ "${nixDaemonSrv}.service" ];
       };

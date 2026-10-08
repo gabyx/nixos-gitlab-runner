@@ -427,6 +427,12 @@ in
     };
 
     jobs = {
+      enable = mkOption {
+        type = types.bool;
+        description = "Build some variants of useful job images and add them to the registry.";
+        default = true;
+      };
+
       defaultPackages = mkOption {
         type = types.listOf types.package;
         description = ''
