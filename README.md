@@ -38,7 +38,7 @@ configurations.**
     - [Container Images for Gitlab Jobs](#container-images-for-gitlab-jobs)
       - [Entrypoint](#entrypoint)
     - [Images for CI Setup](#images-for-ci-setup)
-    - [Job Containers](#job-containers)
+  - [Job Containers](#job-containers)
     - [Podman inside Job Container](#podman-inside-job-container)
     - [Cleanup Disk Space](#cleanup-disk-space)
 - [Tests](#tests)
@@ -185,14 +185,16 @@ which must run as `root` and does the following:
 #### Images for CI Setup
 
 - `local/nix-daemon`: An image with a Nix daemon which is used to share the
-  `/nix/store` across jobs (settings `cfg.nix-daemon`) setup with all essential
-  derivations of the job images.
+  `/nix/store` across jobs (settings `cfg.nix-daemon`). It containes also all
+  essential derivations from the job images since these are slim-images by only
+  containing symlinks and no actual `/nix/store`.
 
 - `local/podman-daemon`: An image with `podman` running as a daemon which is
   used to run `podman` inside the above job containers images (settings
-  `cfg.podman-daemon`).
+  `cfg.podman-daemon`). This is mainly for security and not pollute the podman
+  daemon running on the host.
 
-#### Job Containers
+### Job Containers
 
 - Every job container runs in a `podman` container instance based by default on
   `local/alpine` (setting `cfg.jobs.defaultImageName`). A pipeline job can
@@ -237,6 +239,8 @@ which must run as `root` and does the following:
 >
 > Building container images with `buildah` (stripped `podman` for building
 > images) inside a job which runs `local/alpine` is still possible.
+
+### Maintenance
 
 #### Cleanup Disk Space
 
