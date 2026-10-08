@@ -216,13 +216,14 @@ which must run as `root` and does the following:
 #### Cleanup Disk Space
 
 With this setup its really easy to clean the `nix-daemon-container` (e.g. if you
-run out of disk space), then reboot and have the runner in a clean state. You
-can do the following to effectively clean everything and start with fresh
-volumes safely:
+run out of disk space (it does garbage collection)), then reboot and have the
+runner in a clean state. You can do the following to effectively clean
+everything and start with fresh volumes safely:
 
 ```bash
 # Stop the Gitlab runner.
 systemctl stop gitlab-runner.service
+
 # Stop `systemd`-managed containers, such that they get not recreated
 # when deleting below.
 systemctl stop podman-podman-daemon-container.service \
@@ -231,6 +232,7 @@ systemctl stop podman-podman-daemon-container.service \
               podman-job-alpine-container.service \
               podman-job-ubuntu-container.service || true
 
+# Remove all podman stuff.
 podman container rm -f --all
 podman image rm -f --all
 podman volume rm -f --all
@@ -241,7 +243,18 @@ reboot
 
 ## Example
 
-TODO
+### Simple VM
+
+Run the `qemu` VM with to demo/inspect a simple NixOS system
+[`examples/vm-example`](./examples/vm-example):
+
+```bash
+just test-vm
+```
+
+### Production Examples
+
+- [SDSC Gitlab Runner](https://github.com/sdsc-ordes/cloud-infra-public/tree/main/components/vm-gitlab-runner/system)
 
 ## Tests
 
