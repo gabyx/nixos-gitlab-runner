@@ -136,6 +136,8 @@ let
     };
 
   nixDaemonContainer = {
+    podman.user = cfg.ciUser.name;
+
     imageFile = nixDaemonImage;
     image = "${cfg.nix-daemon.name}:${cfg.nix-daemon.tag}";
 
@@ -153,6 +155,8 @@ let
   };
 
   podmanDaemonContainer = {
+    podman.user = cfg.ciUser.name;
+
     imageFile = podmanDaemonImage;
     image = "${cfg.podman-daemon.name}:${cfg.podman-daemon.tag}";
 
@@ -187,12 +191,21 @@ let
     "--docker-volumes-from"
     "${cfg.nix-daemon.containerName}:ro"
 
-    "--docker-host"
-    "unix:///var/run/podman/podman.sock"
-
     "--docker-network-mode"
     "podman"
   ]
+  ++ (
+    if cfg.ciUser.name == "root" then
+      [
+        "--docker-host"
+        "unix:///var/run/podman/podman.sock"
+      ]
+    else
+      [
+        "--docker-host"
+        "unix:///run/user/${toString config.users.users.${cfg.ciUser.name}.uid}/podman/podman.sock"
+      ]
+  )
   ++ (lib.optionals (cfg.jobs.enable) [
     # Only use images from the local store: the job images are built by Nix
     # and exist in the store, so dont pull them.
@@ -231,7 +244,10 @@ let
     };
 in
 {
-  imports = [ ./options.nix ];
+  imports = [
+    ./options.nix
+    ./user.nix
+  ];
 
   config = lib.mkIf cfg.enable {
     virtualisation.docker.enable = false;
@@ -288,7 +304,20 @@ in
         nixDaemonSrv = containers.${cfg.nix-daemon.containerName}.serviceName;
       in
       {
-        # Start Runner after nix-daemon-container.
+        # Start Gitlab runner after nix daemon.
+        gitlab-runner = {
+          after = [
+            "${nixDaemonSrv}.service"
+            "linger-users.service"
+          ];
+        }
+        // lib.optionalAttrs (cfg.ciUser != "root") {
+          serviceConfig = {
+            SupplementaryGroup = [ ];
+          };
+        };
+
+        # Start nix-daemon-container before gitlab-runner.
         "${nixDaemonSrv}.service" = {
           before = [ "gitlab-runner.service" ];
           wantedBy = [ "gitlab-runner.service" ];
@@ -299,17 +328,16 @@ in
           description = "Load all job images into podman.";
           wantedBy = [ "multi-user.target" ];
           after = [
-            "podman.service"
             "${nixDaemonSrv}.service"
+            "podman.service"
           ];
           before = [ "gitlab-runner.service" ];
           requires = [ "${nixDaemonSrv}.service" ];
           path = [ config.virtualisation.podman.package ];
 
           serviceConfig = {
+            User = cfg.ciUser.name;
             Type = "oneshot";
-            SupplementaryGroups = "podman";
-            User = "root";
             StandardOutput = "journal";
             StandardError = "journal";
           };
@@ -344,8 +372,7 @@ in
 
           serviceConfig = {
             Type = "oneshot";
-            SupplementaryGroups = "podman";
-            User = "root";
+            User = cfg.ciUser.name;
             StandardOutput = "journal";
             StandardError = "journal";
           };

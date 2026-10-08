@@ -77,6 +77,41 @@ in
       the podman image setup for job images, nix daemon, podman daemon for different gitlab runners to configure over {option}`services.gitlab-runner.services.<name>`
     '';
 
+    ciUser = {
+      name = mkOption {
+        type = types.str;
+        default = "ci";
+        description = ''
+          The CI user on the VM which runs all containers over podman.
+          This enables root-less podman.
+        '';
+      };
+
+      uid = mkOption {
+        type = types.number;
+        default = 1000;
+        description = ''
+          The CI user ID on the VM which runs all containers over podman.
+        '';
+      };
+
+      group = mkOption {
+        type = types.str;
+        default = "ci";
+        description = ''
+          The CI group on the VM which runs all containers over podman.
+        '';
+      };
+
+      gid = mkOption {
+        type = types.number;
+        default = 1000;
+        description = ''
+          The CI group ID on the VM which runs all containers over podman.
+        '';
+      };
+    };
+
     registrationFlags = mkOption {
       type = types.nullOr (types.listOf types.str);
       apply =

@@ -23,8 +23,9 @@ in
 
           ./vm-example/dummy-stuff.nix
 
-          ./vm-example/configuration.nix
           ./vm-example/vm.nix
+          ./vm-example/virtualization.nix
+          ./vm-example/runner.nix
         ];
       }
     );

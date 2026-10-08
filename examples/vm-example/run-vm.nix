@@ -23,7 +23,7 @@ writeShellApplication {
   runtimeInputs = [ coreutils ];
 
   text = ''
-    state_dir="''${EXAMPLE_VM_STATE_DIR:-$PWD/.output/state/example-vm}"
+    state_dir="''${EXAMPLE_VM_STATE_DIR:-$PWD/.output/state/vm-example}"
     secrets_dir="''${GITLAB_RUNNER_SECRETS_DIR:-$state_dir/secrets}"
     token_file="$secrets_dir/token.env"
 

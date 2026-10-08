@@ -16,13 +16,13 @@
   # `podman-daemon-container` by name.
   virtualisation.podman.defaultNetwork.settings.dns_enabled = true;
 
-  environment.systemPackages = with pkgs; [
-    git
-    jq
+  environment.systemPackages = [
+    pkgs.git
+    pkgs.jq
   ];
 
   # Keeps the example quick to build.
-  documentation.enable = lib.mkDefault false;
+  documentation.enable = false;
   services.speechd.enable = false;
 
   # This VM is thrown away together with its disk image, so tracking the
@@ -80,25 +80,29 @@
         };
       };
 
-      users.motd = ''
-        Gitlab runner example VM
-        ========================
+      users.motd =
+        let
+          pre = lib.optionalString (cfg.ciUser != "root") "cd /home/ci && sudo -u ci ";
+        in
+        ''
+          Gitlab runner example VM
+          ========================
 
-          Runner status:  systemctl status gitlab-runner.service
-          Runner log:     journalctl -fu gitlab-runner.service
-          Containers:     podman ps -a
-          Images:         podman images
+            Runner status:  'systemctl status gitlab-runner.service'
+            Runner log:     'journalctl -fu gitlab-runner.service'
+            Containers:     '${pre}podman ps -a'
+            Images:         '${pre}podman images'
 
-          Start a job container by hand:
+            Start a job container by hand:
 
-            podman run --rm -it \
-              --volumes-from '${cfg.nix-daemon.containerName}' \
-              -v '${cfg.podman-daemon.volumes.socket.name}:/run/podman' \
-              '${cfg.jobs.defaultImageName}' \
-              bash -c 'export CI_PIPELINE_ID=123456 && \
-                       gitlab-runner-pre-build-script && nix --version'
+              ${pre}podman run --rm -it \
+                --volumes-from '${cfg.nix-daemon.containerName}' \
+                -v '${cfg.podman-daemon.volumes.socket.name}:/run/podman' \
+                '${cfg.jobs.defaultImageName}' \
+                bash -c 'export CI_PIPELINE_ID=123456 && \
+                         gitlab-runner-pre-build-script && nix --version'
 
-          Quit the VM with `Ctrl-a x`.
-      '';
+            Quit the VM with `Ctrl-a x`.
+        '';
     };
 }
