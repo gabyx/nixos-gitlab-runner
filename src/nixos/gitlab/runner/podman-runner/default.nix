@@ -42,6 +42,19 @@ let
 
   loadJobImages = pkgs.callPackage ./scripts/load-job-images.nix { inherit (jobImgs) images; };
 
+  ciUid = toString cfg.ciUser.uid;
+  podmanSocket =
+    if cfg.ciUser.name == "root" then
+      "/var/run/podman/podman.sock"
+    else
+      "/run/user/${toString config.users.users.${cfg.ciUser.name}.uid}/podman/podman.sock";
+
+  remotePodman = {
+    environment.CONTAINER_HOST = "unix://${podmanSocket}"; # podman acts as a remote client
+    after = [ "user@${ciUid}.service" ];
+    wants = [ "user@${ciUid}.service" ];
+  };
+
   # This is the Nix base image used for the Nix Daemon.
   # The build script for the nixos/nix image is vendored due to Hydra limitations
   # cause fetching it is an IFD (Import from Derivation) which is not allowed.
@@ -193,19 +206,10 @@ let
 
     "--docker-network-mode"
     "podman"
+
+    "--docker-host"
+    "unix://${podmanSocket}"
   ]
-  ++ (
-    if cfg.ciUser.name == "root" then
-      [
-        "--docker-host"
-        "unix:///var/run/podman/podman.sock"
-      ]
-    else
-      [
-        "--docker-host"
-        "unix:///run/user/${toString config.users.users.${cfg.ciUser.name}.uid}/podman/podman.sock"
-      ]
-  )
   ++ (lib.optionals (cfg.jobs.enable) [
     # Only use images from the local store: the job images are built by Nix
     # and exist in the store, so dont pull them.
@@ -217,6 +221,7 @@ let
   ]);
 
   # Init container to setup stuff.
+  # If you add stuff here also add the systemd stuff below.
   setupContainers =
     let
       imgCfg = cfg.jobs.nix;
@@ -224,6 +229,8 @@ let
     in
     {
       setup-scratch = {
+        podman.user = cfg.ciUser.name;
+
         imageFile = image;
         image = "${imgCfg.name}:${imgCfg.tag}";
 
@@ -323,29 +330,35 @@ in
           wantedBy = [ "gitlab-runner.service" ];
         };
 
-        # Load all job images.
-        podman-load-job-images = lib.mkIf (cfg.jobs.enable) {
-          description = "Load all job images into podman.";
-          wantedBy = [ "multi-user.target" ];
-          after = [
-            "${nixDaemonSrv}.service"
-            "podman.service"
-          ];
-          before = [ "gitlab-runner.service" ];
-          requires = [ "${nixDaemonSrv}.service" ];
-          path = [ config.virtualisation.podman.package ];
-
-          serviceConfig = {
-            User = cfg.ciUser.name;
-            Type = "oneshot";
-            StandardOutput = "journal";
-            StandardError = "journal";
-          };
-
-          script = "${lib.getExe loadJobImages}";
-        };
+        # Setup containers.
+        # "podman-setup-scratch" = remotePodman;
       }
       // (lib.optionalAttrs (cfg.jobs.enable) {
+        # Load all job images.
+        podman-load-job-images = lib.mkMerge [
+          remotePodman
+          {
+            description = "Load all job images into podman.";
+            wantedBy = [ "multi-user.target" ];
+            after = [
+              "${nixDaemonSrv}.service"
+              "podman.service"
+            ];
+            before = [ "gitlab-runner.service" ];
+            requires = [ "${nixDaemonSrv}.service" ];
+            path = [ config.virtualisation.podman.package ];
+
+            serviceConfig = {
+              User = cfg.ciUser.name;
+              Type = "oneshot";
+              StandardOutput = "journal";
+              StandardError = "journal";
+            };
+
+            script = "${lib.getExe loadJobImages}";
+          }
+        ];
+
         # Update Nix store in the daemon service.
         # The job images do not contain any actual store paths and are very small.
         # We add `allStoreDrvs` to the nix store volume `nix-daemon-store` of the
@@ -355,28 +368,31 @@ in
         # service initializes the store correctly again.
         # Note: Podman, when starting the `nix-daemon-container`, copies all `/nix/store` paths
         # from the image to the `nix-daemon-store` volume before running it.
-        update-nix-daemon-store = {
-          description = "update-nix-daemon-store";
-          restartIfChanged = true;
+        update-nix-daemon-store = lib.mkMerge [
+          remotePodman
+          {
+            description = "update-nix-daemon-store";
+            restartIfChanged = true;
 
-          before = [ "${nixDaemonSrv}.service" ];
+            before = [ "${nixDaemonSrv}.service" ];
 
-          wantedBy = [
-            "multi-user.target"
-            "${nixDaemonSrv}.service"
-          ];
+            wantedBy = [
+              "multi-user.target"
+              "${nixDaemonSrv}.service"
+            ];
 
-          script = ''
-            ${lib.getExe updateNixStoreVolume}
-          '';
+            script = ''
+              ${lib.getExe updateNixStoreVolume}
+            '';
 
-          serviceConfig = {
-            Type = "oneshot";
-            User = cfg.ciUser.name;
-            StandardOutput = "journal";
-            StandardError = "journal";
-          };
-        };
+            serviceConfig = {
+              Type = "oneshot";
+              User = cfg.ciUser.name;
+              StandardOutput = "journal";
+              StandardError = "journal";
+            };
+          }
+        ];
       });
   };
 }
