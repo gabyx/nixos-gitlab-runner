@@ -40,6 +40,8 @@ let
     pkgs = jobImagePkgs;
   };
 
+  loadJobImages = pkgs.callPackage ./scripts/load-job-images.nix { inherit (jobImgs) images; };
+
   # This is the Nix base image used for the Nix Daemon.
   # The build script for the nixos/nix image is vendored due to Hydra limitations
   # cause fetching it is an IFD (Import from Derivation) which is not allowed.
@@ -309,7 +311,36 @@ in
         containers = config.virtualisation.oci-containers.containers;
         nixDaemonSrv = containers.${cfg.nix-daemon.containerName}.serviceName;
       in
-      modifiedJobServices
+      {
+        # Start Runner after nix-daemon-container.
+        "${nixDaemonSrv}.service" = {
+          before = [ "gitlab-runner.service" ];
+          wantedBy = [ "gitlab-runner.service" ];
+        };
+
+        # Load all job images.
+        load-job-images = lib.mkIf (cfg.jobs.enable) {
+          description = "Load all job images into podman.";
+          wantedBy = [ "multi-user.target" ];
+          after = [
+            "podman.service"
+            "${nixDaemonSrv}.service"
+          ];
+          before = [ "gitlab-runner.service" ];
+          requires = [ "${nixDaemonSrv}.service" ];
+          path = [ config.virtualisation.podman.package ];
+
+          serviceConfig = {
+            Type = "oneshot";
+            SupplementaryGroups = "podman";
+            User = "root";
+            StandardOutput = "journal";
+            StandardError = "journal";
+          };
+
+          script = "${lib.getExe loadJobImages}";
+        };
+      }
       // (lib.optionalAttrs (cfg.jobs.enable) {
         # Update Nix store in the daemon service.
         # The job images do not contain any actual store paths and are very small.
@@ -323,10 +354,13 @@ in
         update-nix-daemon-store = {
           description = "update-nix-daemon-store";
           restartIfChanged = true;
-          wantedBy = [ "multi-user.target" ];
 
-          # Ensure that the bootstrap is restarted when `nix-daemon-container` is.
-          partOf = [ "${nixDaemonSrv}.service" ];
+          before = [ "${nixDaemonSrv}.service" ];
+
+          wantedBy = [
+            "multi-user.target"
+            "${nixDaemonSrv}.service"
+          ];
 
           script = ''
             ${lib.getExe updateNixStoreVolume}
@@ -340,13 +374,6 @@ in
             StandardError = "journal";
           };
         };
-
-        # Start 'nix-daemon-container' after the update of the volume.
-        "${nixDaemonSrv}".after = [ "update-nix-daemon-store.service" ];
-      })
-      // {
-        # Start Runner after nix-daemon-container.
-        gitlab-runner.after = [ "${nixDaemonSrv}.service" ];
-      };
+      });
   };
 }
