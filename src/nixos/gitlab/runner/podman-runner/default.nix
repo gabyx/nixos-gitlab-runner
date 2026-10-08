@@ -321,6 +321,7 @@ in
         // lib.optionalAttrs (cfg.ciUser != "root") {
           serviceConfig = {
             SupplementaryGroup = [ ];
+            User = cfg.ciUser.name;
           };
         };
 
