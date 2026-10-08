@@ -24,6 +24,8 @@
 let
   cfg = config.services.gitlab-runner-podman;
 
+  jobImagePkgs = if cfg.jobs.pkgs != null then cfg.jobs.pkgs else pkgs;
+
   # Some scripts we use.
   updateNixStoreVolume = pkgs.callPackage ./scripts/copy-to-nix-store.nix {
     image = nixDaemonImage.imageName + ":" + nixDaemonImage.imageTag;
@@ -33,7 +35,8 @@ let
 
   # These derivations are symlinked into the job images root dir.
   jobImgs = import ./job-images.nix {
-    inherit lib pkgs cfg;
+    inherit lib cfg;
+    pkgs = jobImagePkgs;
   };
 
   # This is the Nix base image used for the Nix Daemon.
@@ -185,7 +188,7 @@ let
     "unix:///var/run/podman/podman.sock"
 
     "--docker-network-mode"
-    "bridge"
+    "podman"
   ]
   ++ (lib.optionals (cfg.jobs.enable) [
     # Only use images from the local store: the job images are built by Nix

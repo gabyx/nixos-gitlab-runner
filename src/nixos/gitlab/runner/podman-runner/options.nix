@@ -433,24 +433,37 @@ in
         default = true;
       };
 
-      defaultPackages = mkOption {
-        type = types.listOf types.package;
+      pkgs = mkOption {
+        type = types.nullOr (types.attrsOf types.package);
+        description = "The package set to build the job images with.";
+        default = null;
+      };
+
+      packagesDefault = mkOption {
+        type = types.functionTo (types.listOf types.package);
         description = ''
-          The default packages in every job container.
-          These live in the `nix-daemon`'s `/nix/store` and only symlinks are maintained in
-          the job containers to make them small.
+          Function returning default packages which are by default added in every job container.
+          The attribute set `{pkgs}` is passed and the result is passed to `packagesFunc`.
         '';
-        default = [
+        default = { pkgs }: [
           (lib.hiPrio pkgs.coreutils)
           (lib.hiPrio pkgs.findutils)
-          pkgs.openssh
           pkgs.bashInteractive
           (lib.hiPrio pkgs.git)
 
-          pkgs.cachix # For cachix.org.
-
           pkgs.podman # For nested containers.
         ];
+      };
+
+      packagesFunc = mkOption {
+        type = types.functionTo (types.listOf types.package);
+        description = ''
+          The function to return default packages in every job container.
+          The attribute set `{pkgs, defaultPkgs = cfg.packagesDefault pkgs} ` is passed to the function.
+          These live in the `nix-daemon`'s `/nix/store` and only symlinks are maintained in
+          the job containers to make them small.
+        '';
+        default = { pkgs, defaultPackages }: defaultPackages;
       };
 
       defaultImageName = mkOption {

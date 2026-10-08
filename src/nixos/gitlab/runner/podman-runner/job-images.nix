@@ -31,7 +31,10 @@ let
     files.containers
     files.commonRoot
   ]
-  ++ cfg.jobs.defaultPackages;
+  ++ (cfg.jobs.packagesFunc {
+    inherit pkgs;
+    defaultPackages = cfg.jobs.packagesDefault { inherit pkgs; };
+  });
 
   extraCommands =
     # bash
