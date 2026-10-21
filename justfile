@@ -38,19 +38,19 @@ lint *args:
     set -eu
     nix flake check --no-pure-eval
 
-# Run the NixOS VM test.
+# Run the NixOS VM test in the sandbox.
 [group('test')]
-test type="test-gitlab-runner-unstable.driver" *args:
+test type="test-gitlab-runner-unstable" *args:
     #!/usr/bin/env bash
     set -eu
-    just nix::run "{{type}}" "${@:2}"
+    just nix::build "{{type}}" "${@:2}"
 
-# Run the NixOS VM test interactively.
+# Run the NixOS VM test interactively not in the sandbox.
 [group('test')]
 test-interactive *args:
     #! /usr/bin/env bash
     set -eu
-    just test "test-gitlab-runner-unstable.driverInteractive" "$@"
+    just nix::run "test-gitlab-runner-unstable.driverInteractive" "$@"
 
 # Run the example VM and drop into a shell.
 [group('vm')]

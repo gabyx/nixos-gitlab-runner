@@ -42,7 +42,7 @@ jobs:
           limit-access-to-actor: true
 
       - name: vm-test-${{ matrix.name }}
-        run: just ci just nix::build "test-${{ matrix.name }}"
+        run: just ci just test "test-${{ matrix.name }}"
 
   # Aggregate check for protection rule.
   tests-all:
