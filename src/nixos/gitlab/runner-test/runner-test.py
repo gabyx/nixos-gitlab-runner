@@ -1,7 +1,6 @@
 import json
 import os
 from dataclasses import dataclass
-from datetime import timedelta
 from pathlib import Path
 from string import Template
 from typing import Any
@@ -156,7 +155,7 @@ def test_nix_daemon_gc(user: str, uid: str, container: str, store_path: str):
 
     print(f"==> Check that '{store_path}' is valid in the Nix daemon store.")
     vms.gitlab_runner.wait_until_succeeds(
-        f"{run} nix-store --check-validity {store_path}", timeout=timedelta(seconds=120)
+        f"{run} nix-store --check-validity {store_path}", timeout=120
     )
 
     print("==> Run garbage collection in the Nix daemon store.")
