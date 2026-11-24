@@ -95,7 +95,7 @@ let
     #       which uses `buildEnv` which collides.
     fakeRootCommands =
       let
-        allPkgs = cfg.nix-daemon.content ++ (lib.optionals cfg.jobs.enable jobImgs.allStoreDrv);
+        allPkgs = cfg.nix-daemon.content ++ jobImgs.allStoreDrv;
       in
       # bash
       ''
