@@ -9,6 +9,22 @@ in
 
     inherit (cfg.ciUser) uid group;
 
+    # Extent the user `uid/gid` ranges to make podman work with user namespaces.
+    subUidRanges = [
+      {
+        startUid = 100000;
+        count = 65539;
+      }
+    ];
+    subGidRanges = [
+      {
+        startGid = 100000;
+        count = 65539;
+      }
+    ];
+
+    extraGroups = [ "podman" ];
+
     linger = true;
   };
 
