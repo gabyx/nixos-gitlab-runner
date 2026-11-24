@@ -185,11 +185,13 @@ in
 
         extraCommands =
           extraCommands
-          + ''
-            set -eu -o pipefail
-            # For `/usr/bin/env`.
-            mkdir -p usr && ln -s ../bin usr/bin
-          ''
+          +
+            # Bash
+            ''
+              set -eu -o pipefail
+              # For `/usr/bin/env`.
+              mkdir -p usr && ln -s ../bin usr/bin
+            ''
           + img.extraCommands;
 
         fakeRootCommands = fakeRootCommands + img.fakeRootCommands;
