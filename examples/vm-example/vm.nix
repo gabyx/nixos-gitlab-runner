@@ -64,7 +64,6 @@
         sharedDirectories.gitlab-runner-secrets = {
           source = "$GITLAB_RUNNER_SECRETS_DIR";
           target = "/run/secrets/gitlab-runner";
-          securityModel = "none";
         };
       };
 

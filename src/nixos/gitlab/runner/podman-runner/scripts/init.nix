@@ -6,8 +6,6 @@
   gosu,
 }:
 let
-  # This script is sourced in the prebuild script
-  # `prebuild.nix`.
   profileFn =
     # bash
     ''
@@ -42,6 +40,8 @@ let
       }
     '';
 
+  # This script is sourced in the prebuild script
+  # `prebuild.nix`.
   profile =
     writeShellScriptBin "profile-script"
       # bash

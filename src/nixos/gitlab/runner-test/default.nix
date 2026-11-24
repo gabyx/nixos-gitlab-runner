@@ -136,6 +136,8 @@ in
   testScript =
     { nodes, ... }:
     let
+      podmanCfg = nodes.gitlab-runner.services.gitlab-runner-podman;
+
       runnerTokenEnv = pkgs.writeText "runner-token.env" ''
         CI_SERVER_URL=http://gitlab
         CI_SERVER_TOKEN=$token
@@ -174,5 +176,13 @@ in
 
       for config in runnerConfigs.values():
         test_runner_registered(config)
+
+      if "podman" in runnerConfigs:
+        test_nix_daemon_gc(
+          user="${podmanCfg.ciUser.name}",
+          uid="${toString podmanCfg.ciUser.uid}",
+          container="${podmanCfg.nix-daemon.containerName}",
+          store_path="${podmanCfg.preBuildScript}",
+        )
     '';
 }

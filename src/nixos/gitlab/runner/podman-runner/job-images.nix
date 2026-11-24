@@ -166,13 +166,17 @@ in
   # which will end up in a `nix-daemon-store` volume.
   # The derivations which are taken out from the images
   # must be added here.
-  allStoreDrv =
+  allStoreDrv = [
+    preBuildScript
+  ]
+  ++ (lib.optionals cfg.jobs.enable (
     jobImagePkgs
     ++ files.all
     ++ initScripts.all
     ++ cfg.jobs.nix.content
     ++ cfg.jobs.ubuntu.content
-    ++ cfg.jobs.alpine.content;
+    ++ cfg.jobs.alpine.content
+  ));
 
   images = {
     # The Nix image.

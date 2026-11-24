@@ -142,3 +142,25 @@ def test_runner_registered(r: Runner):
         raise Exception(
             f"Runner '{r.name}' [id: '{r.id}'] status is not active: {resp}"
         )
+
+
+def test_nix_daemon_gc(user: str, uid: str, container: str, store_path: str):
+    """
+    Test that `store_path` is registered in the Nix daemon store and
+    survives a garbage collection.
+    """
+
+    podman = f"runuser -u {user} -- env XDG_RUNTIME_DIR=/run/user/{uid} podman"
+    run = f"{podman} exec {container}"
+
+    print(f"==> Check that '{store_path}' is valid in the Nix daemon store.")
+    vms.gitlab_runner.wait_until_succeeds(
+        f"{run} nix-store --check-validity {store_path}", timeout=120
+    )
+
+    print("==> Run garbage collection in the Nix daemon store.")
+    vms.gitlab_runner.succeed(f"{run} nix-store --gc")
+
+    print(f"==> Check that '{store_path}' still exists.")
+    vms.gitlab_runner.succeed(f"{run} test -e {store_path}")
+    vms.gitlab_runner.succeed(f"{run} nix-store --check-validity {store_path}")
