@@ -8,6 +8,7 @@
   image,
   volume-nix-store,
   volume-nix-db,
+  nixStoreRegistrationDir,
 }:
 writeShellApplication {
   name = "gitlab-runner-copy-to-nix-store";
@@ -36,6 +37,10 @@ writeShellApplication {
 
       CMD=$(
           cat <<"EOF"
+      # Register the added store paths in the image, otherwise
+      # their GC roots are skipped and they are not copied.
+      nix-store --load-db <"${nixStoreRegistrationDir}/registration"
+
       # Get all store paths.
       readarray -t DRVS < <(nix-store --gc --print-roots | cut -d ' ' -f 3)
 

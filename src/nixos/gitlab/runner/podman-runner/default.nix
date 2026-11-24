@@ -32,6 +32,7 @@ let
     imageDrv = nixDaemonImage;
     volume-nix-store = cfg.nix-daemon.volumes.store.name;
     volume-nix-db = cfg.nix-daemon.volumes.db.name;
+    inherit nixStoreRegistrationDir;
   };
 
   # These derivations are symlinked into the job images root dir.
@@ -39,6 +40,48 @@ let
     inherit lib cfg;
     pkgs = jobImagePkgs;
   };
+
+  # All store paths which must stay alive in the Nix daemon store.
+  # These are paths which are only symlinked in the job images.
+  nixDaemonStorePaths = cfg.nix-daemon.content ++ jobImgs.allStoreDrv;
+
+  # The registration (validity info) of the closure of `nixDaemonStorePaths`.
+  # `buildLayeredImage` copies these paths into the image but does not
+  # register them in the Nix database of the image. Nix ignores GC roots to
+  # unregistered paths and the garbage collector deletes unregistered paths,
+  # so they get registered with `nix-store --load-db` at runtime.
+  nixStoreRegistration = pkgs.closureInfo { rootPaths = nixDaemonStorePaths; };
+
+  # The directory in the Nix daemon image where the files `registration` and
+  # `store-paths` of `nixStoreRegistration` are copied to.
+  # It must not be in `/nix/store` (it would be unregistered itself) and
+  # not in a volume (it would not be updated with the image).
+  nixStoreRegistrationDir = "/nix/var/nix/registration";
+
+  # Register all paths in `nixStoreRegistrationDir` and start the daemon.
+  nixDaemonStartScript =
+    # bash
+    ''
+      set -eu
+
+      missing=0
+      while read -r path; do
+        if [ ! -e "$path" ]; then
+          echo "Store path '$path' is missing." >&2
+          missing=1
+        fi
+      done <"${nixStoreRegistrationDir}/store-paths"
+
+      if [ "$missing" = "0" ]; then
+        echo "Register store paths from '${nixStoreRegistrationDir}/registration'." >&2
+        nix-store --load-db <"${nixStoreRegistrationDir}/registration"
+      else
+        echo "WARNING: Not registering store paths, some are missing." >&2
+        echo "         Restart 'update-nix-daemon-store.service' to copy them." >&2
+      fi
+
+      exec nix daemon
+    '';
 
   loadJobImages = pkgs.callPackage ./scripts/load-job-images.nix { inherit (jobImgs) images; };
 
@@ -91,19 +134,23 @@ let
     inherit (cfg.nix-daemon) extraCommands;
 
     # Add all store paths and make them GC roots, so we dont loose them.
+    # The GC roots only take effect once the paths are registered
+    # (see `nixDaemonStartScript`).
     # NOTE: Cannot add it to `extraPkgs` cause of the profile
-    #       which uses `buildEnv` which collides.
+    #       which uses `buildEnv` in the base image which collides.
     fakeRootCommands =
-      let
-        allPkgs = cfg.nix-daemon.content ++ jobImgs.allStoreDrv;
-      in
       # bash
       ''
+        mkdir -p ".${nixStoreRegistrationDir}"
+        cp "${nixStoreRegistration}/registration" \
+           "${nixStoreRegistration}/store-paths" \
+           ".${nixStoreRegistrationDir}/"
+
         mkdir -p nix/var/nix/gcroots/additional-pkgs
         ${lib.concatMapStringsSep "\n" (pkg: ''
           echo "Adding package '${pkg}'"
           ln -fs "${pkg}" "nix/var/nix/gcroots/additional-pkgs/"
-        '') allPkgs}
+        '') nixDaemonStorePaths}
       ''
       + cfg.nix-daemon.fakeRootCommands;
 
@@ -162,8 +209,9 @@ let
       # "${config.sops.secrets.nix-store-signing-key.path}:${config.sops.secrets.nix-store-signing-key.path}:ro"
     ];
     cmd = [
-      "nix"
-      "daemon"
+      "bash"
+      "-c"
+      nixDaemonStartScript
     ];
   };
 
