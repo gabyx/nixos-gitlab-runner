@@ -56,7 +56,7 @@
     };
 
     # Nixpkgs (latest ones).
-    nixpkgs.url = "github:nixos/nixpkgs?rev=d6524aaca2ff07876657ae2b323f24be4874944b";
+    nixpkgs.url = "github:nixos/nixpkgs?rev=d5cc6833999746cffdfe0598f7bc801a57b887a9";
     multiverse.url = "github:fzakaria/nixpkgs-multiverse";
 
     # Format the repo with nix-treefmt.
